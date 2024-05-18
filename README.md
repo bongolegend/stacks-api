@@ -7,7 +7,8 @@ We like to stay connected, and we like to accomplish things. Do both with `stack
 ## Develop
 
 ### Setup
-Run your dev env in docker. You're welcome.
+This project has the fixins to use VSCode dev containers.
+You need to mod `setup.sh` to include you git creds.
 
 To build the image
 ```

@@ -10,5 +10,16 @@ services:
       - 8000:8000
     volumes:
       - ./:/app/
+    depends_on:
+      - postgres
     command: sh -c "while true; do sleep 1; done"
     restart: on-failure:4
+
+  postgres:
+    image: postgres:14.9-alpine
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=stacks
