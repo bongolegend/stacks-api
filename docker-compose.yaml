@@ -1,0 +1,14 @@
+version: '3.9'
+
+services:
+  fastapi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    ports:
+      - 8000:8000
+    volumes:
+      - ./:/app/
+    command: sh -c "while true; do sleep 1; done"
+    restart: on-failure:4
