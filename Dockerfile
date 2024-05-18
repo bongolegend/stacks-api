@@ -12,6 +12,8 @@ ENV ENV=dev
 RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y git
+COPY ./setup.sh .
+RUN ./setup.sh
 
 COPY requirements/dev.txt .
 RUN pip install --no-cache-dir -r ./dev.txt
