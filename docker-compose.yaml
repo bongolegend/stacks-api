@@ -12,7 +12,7 @@ services:
       - ./:/app/
     depends_on:
       - postgres
-    command: sh -c "while true; do sleep 1; done"
+    command: sh -c "alembic upgrade head && while true; do sleep 1; done"
     restart: on-failure:4
 
   postgres:
