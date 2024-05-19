@@ -23,10 +23,5 @@ docker compose down
 
 
 ### New dependencies
-Add new deps to `requirements/*.in`, then run this to recompile the lock files, then reinstall.
-```
-pip-compile requirements/prod.in --output-file=requirements/prod.txt
-pip-compile requirements/dev.in --output-file=requirements/dev.txt
-pip install -r requirements/prod.txt
-pip install -r requirements/dev.txt
-```
+Add new deps to `requirements/*.in`, then run `./update-deps.sh` to recompile the lock files and reinstall.
+
