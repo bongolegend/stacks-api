@@ -25,3 +25,5 @@ docker compose down
 ### New dependencies
 Add new deps to `requirements/*.in`, then run `./update-deps.sh` to recompile the lock files and reinstall.
 
+### Postgres changes
+alembic revision --autogenerate -m "message"

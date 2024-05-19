@@ -1,14 +1,15 @@
-from sqlalchemy import Column, BigInteger, String, Text, Boolean, DateTime, ForeignKey, Identity
+from sqlalchemy import Column, String, Text, Boolean, DateTime, ForeignKey, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import UUID
 
 Base = declarative_base()
 
 class CommonBase(Base):
     __abstract__ = True
-    id = Column(BigInteger, Identity(), primary_key=True)
-    created_at = Column(DateTime(timezone=True))
-    updated_at = Column(DateTime(timezone=True))
+    id = Column(UUID(as_uuid=True), primary_key=True, server_default="uuid_generate_v4()")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 class User(CommonBase):
     __tablename__ = 'users'
@@ -27,8 +28,8 @@ class Task(CommonBase):
     due_date = Column(DateTime(timezone=True), nullable=False)
     is_completed = Column(Boolean, default=False)
 
-    user_id = Column(BigInteger, ForeignKey('users.id', ondelete="CASCADE"), nullable=False)
-    goal_id = Column(BigInteger, ForeignKey('goals.id'), nullable=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey('users.id', ondelete="CASCADE"), nullable=False)
+    goal_id = Column(UUID(as_uuid=True), ForeignKey('goals.id'), nullable=True)
 
     user = relationship('User', back_populates='tasks')
     goal = relationship('Goal', back_populates='tasks')
@@ -41,7 +42,7 @@ class Goal(CommonBase):
     due_date = Column(DateTime(timezone=True), nullable=False)
     is_completed = Column(Boolean, default=False)
 
-    user_id = Column(BigInteger, ForeignKey('users.id', ondelete="CASCADE"), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey('users.id', ondelete="CASCADE"), nullable=False)
 
     user = relationship('User', back_populates='goals')
     tasks = relationship('Task', back_populates='goal')
