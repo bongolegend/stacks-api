@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Text, Boolean, DateTime, ForeignKey, func, text
+from sqlalchemy import Column, String, Text, Boolean, DateTime, ForeignKey, func, text, Table
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
@@ -12,6 +12,12 @@ class CommonBase(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
+followers = Table(
+    'followers', Base.metadata,
+    Column('follower_id', UUID(as_uuid=True), ForeignKey('users.id'), primary_key=True),
+    Column('leader_id', UUID(as_uuid=True), ForeignKey('users.id'), primary_key=True)
+)
+
 class User(CommonBase):
     __tablename__ = 'users'
 
@@ -20,6 +26,13 @@ class User(CommonBase):
 
     tasks = relationship('Task', back_populates='user', cascade="all, delete", passive_deletes=True)
     goals = relationship('Goal', back_populates='user', cascade="all, delete", passive_deletes=True)
+    is_following = relationship(
+        'User',
+        secondary=followers,
+        primaryjoin=id == followers.c.follower_id,
+        secondaryjoin=id == followers.c.leader_id,
+        backref='followers'
+    ) 
 
 class Task(CommonBase):
     __tablename__ = 'tasks'
