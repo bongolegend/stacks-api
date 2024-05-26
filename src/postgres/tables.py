@@ -24,9 +24,7 @@ class User(CommonBase):
 class Task(CommonBase):
     __tablename__ = 'tasks'
 
-    title = Column(String, nullable=False)
-    description = Column(Text, nullable=True)
-    due_date = Column(DateTime(timezone=True), nullable=False)
+    description = Column(Text, nullable=False)
     is_completed = Column(Boolean, default=False)
 
     user_id = Column(UUID(as_uuid=True), ForeignKey('users.id', ondelete="CASCADE"), nullable=False)
@@ -38,9 +36,7 @@ class Task(CommonBase):
 class Goal(CommonBase):
     __tablename__ = 'goals'
 
-    title = Column(String, nullable=False)
-    description = Column(Text, nullable=True)
-    due_date = Column(DateTime(timezone=True), nullable=False)
+    description = Column(Text, nullable=False)
     is_completed = Column(Boolean, default=False)
 
     user_id = Column(UUID(as_uuid=True), ForeignKey('users.id', ondelete="CASCADE"), nullable=False)
