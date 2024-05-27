@@ -29,10 +29,14 @@ class User(CommonBase):
     is_following = relationship(
         'User',
         secondary=followers,
-        primaryjoin=id == followers.c.follower_id,
-        secondaryjoin=id == followers.c.leader_id,
-        backref='followers'
-    ) 
+        primaryjoin="users.c.id == followers.c.follower_id",
+        secondaryjoin="users.c.id == followers.c.leader_id",
+        backref="followers"
+    )
+
+    def __repr__(self):
+        return f"<{self.username}, {self.id}>"
+
 
 class Task(CommonBase):
     __tablename__ = 'tasks'
