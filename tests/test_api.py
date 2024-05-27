@@ -23,9 +23,9 @@ def test_create_follow():
 
         follow = requests.Follow(follower_id=user1.id, leader_id=user2.id)
         api.create_follow(db, follow)
-        assert len(user1.is_following) == 1
+        assert len(user1.leaders) == 1
         assert len(user1.followers) == 0
-        assert len(user2.is_following) == 0
+        assert len(user2.leaders) == 0
         assert len(user2.followers) == 1
 
         api.delete_follow(db, follow)

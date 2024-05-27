@@ -26,16 +26,16 @@ def create_user_if_new(db: Session, user: requests.NewUser) -> models.User:
         raise Exception(status_code=400, message="Email already registered")
     return create_user(db, user)
 
-def create_follow(db: Session, follow: requests.Follow):
-    follower = db.query(models.User).filter(models.User.id == follow.follower_id).first()
-    leader = db.query(models.User).filter(models.User.id == follow.leader_id).first()
-    follower.is_following.append(leader)
+def create_follow(db: Session, follow: requests.Follow) -> models.Follow:
+    db_follow = models.Follow(**follow.model_dump())
+    db.add(db_follow)
     db.commit()
+    db.refresh(db_follow)
+    return db_follow
 
 def delete_follow(db: Session, follow: requests.Follow):
-    follower = db.query(models.User).filter(models.User.id == follow.follower_id).first()
-    leader = db.query(models.User).filter(models.User.id == follow.leader_id).first()
-    follower.is_following.remove(leader)
+    db.query(models.Follow) \
+        .filter(models.Follow.follower_id == follow.follower_id) \
+        .filter(models.Follow.leader_id == follow.leader_id) \
+        .delete()
     db.commit()
-
-    
