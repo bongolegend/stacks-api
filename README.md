@@ -27,3 +27,11 @@ Add new deps to `requirements/*.in`, then run `./update-deps.sh` to recompile th
 
 ### Postgres changes
 alembic revision --autogenerate -m "message"
+
+# Decisions
+
+## ULIDs
+ULIDs are lexographically sortable and are shorter than UUIDs so they make for good IDs. They provide faster indexing than UUIDs. They are better than integers because they are resilient to db mess-ups.
+I am generating ULIDs server-side because Postgres doesn't support ULID generation out-of-the-box. I looked at installing an extension but there's a learning curve. https://github.com/pksunkara/pgx_ulid
+
+Typing throughout is defined as UUID, to be compatible with Postgres. But the UUIDs are generated as ULIDs, so they give us the benefits we want.
