@@ -1,42 +1,43 @@
+from uuid import UUID, uuid4
+
 from pydantic import BaseModel, EmailStr, field_validator, Field
-from ulid import ULID
 
 
-class NewUserRequest(BaseModel):
+def _validate_id(value) -> UUID:
+    if isinstance(value, str):
+        return UUID(value)
+    if isinstance(value, UUID):
+        return value
+
+class NewUser(BaseModel):
     email: EmailStr
     username: str = Field(..., min_length=3, max_length=15)
 
-class NewGoalRequest(BaseModel):
-    user_id: ULID
+class NewGoal(BaseModel):
+    user_id: UUID
     description: str = Field(..., min_length=1, max_length=280)
 
     @field_validator('user_id', mode="before")
     @classmethod
-    def validate_id(cls, value: str) -> ULID:
-        return ULID.from_str(value)
+    def validate_id(cls, value):
+        return _validate_id(value)
 
-class NewTaskRequest(BaseModel):
-    user_id: ULID
-    goal_id: ULID | None
+class NewTask(BaseModel):
+    user_id: UUID
+    goal_id: UUID
     description: str = Field(..., min_length=1, max_length=280)
 
-    @field_validator('user_id', mode="before")
+    @field_validator('user_id', 'goal_id', mode="before")
     @classmethod
-    def validate_id(cls, value: str) -> ULID:
-        return ULID.from_str(value)
+    def validate_id(cls, value):
+        return _validate_id(value)
 
-    @field_validator('goal_id', mode="before")
+class Follow(BaseModel):
+    follower_id: UUID
+    leader_id: UUID
+
+    @field_validator('follower_id', "leader_id", mode="before")
     @classmethod
-    def validate_id(cls, value: str | None) -> ULID | None:
-        if value is None:
-            return None
-        return ULID.from_str(value)
+    def validate_id(cls, value):
+        return _validate_id(value)
 
-class NewFollowRequest(BaseModel):
-    user_id: ULID
-    leader_id: ULID
-
-    @field_validator('user_id', "leader_id", mode="before")
-    @classmethod
-    def validate_id(cls, value: str) -> ULID:
-        return ULID.from_str(value)
