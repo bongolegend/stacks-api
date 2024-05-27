@@ -26,6 +26,8 @@ pydantic==2.7.1
     # via -r requirements/prod.in
 pydantic-core==2.18.2
     # via pydantic
+python-ulid==2.6.0
+    # via -r requirements/prod.in
 sqlalchemy==2.0.30
     # via
     #   -r requirements/prod.in

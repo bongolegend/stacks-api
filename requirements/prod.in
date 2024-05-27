@@ -2,4 +2,5 @@ alembic
 email-validator
 psycopg2
 pydantic
+python-ulid
 sqlalchemy
