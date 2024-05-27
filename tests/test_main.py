@@ -2,6 +2,7 @@ from src import main
 from src.types import requests
 from src.postgres.connection import get_db
 
+
 def test_create_user():
     user = requests.NewUser(username='user1', email='user1@a.b')
     with get_db() as db:
