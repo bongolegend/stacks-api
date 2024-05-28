@@ -1,85 +1,113 @@
-from sqlalchemy.orm import Session
+from sqlalchemy import select, insert, delete, update, and_, or_, false
 from ulid import ULID
 from uuid import UUID
 
-from src.postgres import models
-from src.types import requests
+from src.postgres import tables
+from src.types import requests, domain
+from sqlalchemy.engine import Connection
+
 
 ### USER
 
-def create_user(db: Session, user: requests.NewUser) -> models.User:
-    db_user = models.User(id=ULID().to_uuid4(), username=user.username, email=user.email)
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    return db_user
+def create_user(conn: Connection, user: requests.NewUser) -> domain.User:
+    stmt = insert(tables.users).values(**user.model_dump()).returning(tables.users)
+    inserted = conn.execute(stmt).fetchone()._mapping
+    return domain.User(**inserted)
 
-def create_user_if_new(db: Session, user: requests.NewUser) -> models.User:
-    existing_user = get_user_by_email(db, email=user.email)
-    if existing_user:
-        raise Exception(status_code=400, message="Email already registered")
-    return create_user(db, user)
+def get_user(
+        conn: Connection,
+        id: UUID = None,
+        username: str = None, 
+        email: str = None) -> domain.User | None:
+    if [id, username, email].count(None) != 2:
+        raise ValueError("You must exactly one of id, username or email")
+    if id:
+        filter = tables.users.c.id == id
+    if username:
+        filter = tables.users.c.username == username
+    if email:
+        filter = tables.users.c.email == email
+    stmt = select(tables.users).where(filter)
+    result = conn.execute(stmt).fetchone()
+    if result is None:
+        return
+    return domain.User(**result._mapping)
 
-def get_user_by_email(db: Session, email: str) -> models.User:
-    return db.query(models.User).filter(models.User.email == email).first()
+def get_followers(conn: Connection, leader_id: UUID) -> list[domain.User]:
+    stmt = select(tables.users) \
+        .select_from(tables.users) \
+        .join(tables.follows, tables.users.c.id == tables.follows.c.follower_id) \
+        .where(tables.follows.c.leader_id == leader_id)
+    result = conn.execute(stmt).all()
+    followers = [domain.User(**row._mapping) for row in result]
+    return followers
 
-def get_user_by_username():
-    pass
+def get_leaders(conn: Connection, follower_id: UUID) -> list[domain.User]:
+    stmt = select(tables.users) \
+        .select_from(tables.users) \
+        .join(tables.follows, tables.users.c.id == tables.follows.c.leader_id) \
+        .where(tables.follows.c.follower_id == follower_id)
+    result = conn.execute(stmt).all()
+    leaders = [domain.User(**row._mapping) for row in result]
+    return leaders
 
-def get_user_by_id():
-    pass
-
-def get_followers(db: Session, user_id: UUID) -> list[models.User]:
-    pass
-
-def get_leaders(db: Session, user_id: UUID) -> list[models.User]:
-    pass
-
-def delete_user(db: Session, user_id: UUID) -> None:
-    db.query(models.User).filter(models.User.id == user_id).delete()
-    db.commit()
+def delete_user(conn: Connection, user_id: UUID) -> None:
+    stmt = delete(tables.users).where(tables.users.c.id == user_id)
+    conn.execute(stmt)
 
 ### FOLLOW
 
-def create_follow(db: Session, follow: requests.Follow) -> models.Follow:
-    db_follow = models.Follow(**follow.model_dump())
-    db.add(db_follow)
-    db.commit()
-    db.refresh(db_follow)
-    return db_follow
+def create_follow(conn: Connection, follow: requests.Follow) -> domain.Follow:
+    stmt = insert(tables.follows) \
+        .values(follower_id=follow.follower_id, leader_id=follow.leader_id) \
+        .returning(tables.follows)
+    follow = conn.execute(stmt).fetchone()
+    return domain.Follow(**follow._mapping)
 
-def delete_follow(db: Session, follow: requests.Follow):
-    db.query(models.Follow) \
-        .filter(models.Follow.follower_id == follow.follower_id) \
-        .filter(models.Follow.leader_id == follow.leader_id) \
-        .delete()
-    db.commit()
+def delete_follow(conn: Connection, follow: requests.Follow) -> None:
+    stmt = delete(tables.follows).where(
+        and_(tables.follows.c.follower_id == follow.follower_id,
+             tables.follows.c.leader_id == follow.leader_id))
+    conn.execute(stmt)
 
 ### GOAL
 
-def create_goal(db: Session, goal: requests.NewGoal) -> models.Goal:
-    db_goal = models.Goal(id=ULID().to_uuid4(), **goal.model_dump())
-    db.add(db_goal)
-    db.commit()
-    db.refresh(db_goal)
-    return db_goal
+def create_goal(conn: Connection, goal: requests.NewGoal) -> domain.Goal:
+    stmt = insert(tables.goals).values(**goal.model_dump()).returning(tables.goals)
+    inserted = conn.execute(stmt).fetchone()
+    return domain.Goal(**inserted._mapping)
 
-def get_goals(db: Session, user_ids: list[UUID]) -> list[models.Goal]:
-    pass
+def get_goals(conn: Connection, user_id: UUID) -> list[domain.Goal]:
+    stmt = select(tables.goals).where(tables.goals.c.user_id == user_id)
+    result = conn.execute(stmt).all()
+    goals = [domain.Goal(**row._mapping) for row in result]
+    return goals
 
-def delete_goal(db: Session, goal_id: UUID):
-    db.query(models.Goal).filter(models.Goal.id == goal_id).delete()
-    db.commit()
+def delete_goal(conn: Connection, goal_id: UUID) -> None:
+    stmt = delete(tables.goals).where(tables.goals.c.id == goal_id)
+    conn.execute(stmt)
 
 ### TASK
 
-def create_task(db: Session, task: requests.NewTask) -> models.Task:
-    db_task = models.Task(id=ULID().to_uuid4(), **task.model_dump())
-    db.add(db_task)
-    db.commit()
-    db.refresh(db_task)
-    return db_task
+def create_task(conn: Connection, task: requests.NewTask) -> domain.Task:
+    stmt = insert(tables.tasks).values(**task.model_dump()).returning(tables.tasks)
+    inserted = conn.execute(stmt).fetchone()
+    return domain.Task(**inserted._mapping)
 
-def delete_task(db: Session, task_id: UUID):
-    db.query(models.Task).filter(models.Task.id == task_id).delete()
-    db.commit()
+def get_tasks(conn: Connection, user_id: UUID = None, goal_id: UUID = None) -> list[domain.Task]:
+    if [user_id, goal_id].count(None) != 1:
+        raise Exception("You must specify exactly one of `user_id`, `goal_id`")
+    if user_id:
+        filter = tables.tasks.c.user_id == user_id
+    elif goal_id:
+        filter = tables.tasks.c.goal_id == goal_id
+    stmt = select(tables.tasks).where(filter)
+    result = conn.execute(stmt).all()
+    if not result:
+        return []
+    tasks = [domain.Task(**row._mapping) for row in result]
+    return tasks
+
+def delete_task(conn: Connection, task_id: UUID) -> None:
+    stmt = delete(tables.tasks).where(tables.tasks.c.id == task_id)
+    conn.execute(stmt)

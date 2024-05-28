@@ -1,47 +1,38 @@
-from sqlalchemy import MetaData
-from sqlalchemy.orm import Session
+from sqlalchemy import MetaData, delete, insert
+from sqlalchemy.engine import Connection
 from ulid import ULID
 
-from src import api
-from src.types import requests
-from src.postgres.connection import SessionLocal
-from src.postgres import models
+from src.types import requests, domain
+from src.postgres.connection import engine
+from src.postgres import tables
+
+DONT_DELETE_FROM_THESE = ("alembic_version",)
 
 def delete_all_entries_from_db():
-    session = SessionLocal()
     metadata = MetaData()
-    metadata.reflect(bind=session.bind)
-    try:
+    metadata.reflect(bind=engine)
+    with engine.begin() as conn:
         for table in reversed(metadata.sorted_tables):
-            if table.name not in ("alembic_version",):
-                session.execute(table.delete())
-        session.commit()
-    except Exception as e:
-        session.rollback()
-        raise e
-    session.close()
+            if table.name not in DONT_DELETE_FROM_THESE:
+                conn.execute(delete(table))
 
-
-def create_users_for_tests(db: Session, count = 2) -> tuple[models.User]:
+def create_users_for_tests(conn: Connection, count = 2) -> list[domain.User]:
+    """Create users and commit them to db."""
     users = []
     for i in range(count):
-        u = requests.NewUser(email=f"u{i}@a.b", username=f"user{i}")
-        users.append(models.User(id=ULID().to_uuid4(),**u.model_dump()))
-    db.add_all(users)
-    db.commit()
-    _ = [db.refresh(u) for u in users]
-    return tuple(users)
+        users.append(requests.NewUser(email=f"u{i}@a.b", username=f"user{i}").model_dump())
+    inserted = conn.execute(insert(tables.users).values(users).returning(tables.users)).all()
+    conn.commit()
+    inserted = [domain.User(**row._mapping) for row in inserted]
+    return inserted
 
-def create_goals_for_tests(db: Session, users: tuple[models.User], count = 1
-                           ) -> tuple[models.Goal]:
+def create_goals_for_tests(conn: Connection, users: list[domain.User], count = 2) -> list[domain.Goal]:
+    """Create goals for each user and commit them to db."""
     goals = []
     for u in users:
         for i in range(count):
-            g = requests.NewGoal(user_id=u.id, description=f"goal{i}")
-            goals.append(models.Goal(id=ULID().to_uuid4(), **g.model_dump()))
-    db.add_all(goals)
-    db.commit()
-    _ = [db.refresh(u) for g in goals]
-    return tuple(goals)
-
-
+            goals.append(requests.NewGoal(user_id=u.id, description="goal-description").model_dump())
+    inserted = conn.execute(insert(tables.goals).values(goals).returning(tables.goals)).all()
+    conn.commit()
+    inserted = [domain.Goal(**row._mapping) for row in inserted]
+    return inserted
