@@ -25,3 +25,16 @@ def test_create_delete_follow(db):
     api.delete_follow(db, follow)
     assert len(u0.leaders) == 0
     assert len(u1.followers) == 0
+
+def test_create_delete_goal(db):
+    u0 = utils.create_users_for_tests(db, count=1)[0]
+    goal = requests.NewGoal(user_id=u0.id, description="new-goal")
+    db_goal = api.create_goal(db, goal)
+    api.delete_goal(db, db_goal.id)
+
+def test_create_delete_task(db):
+    u0 = utils.create_users_for_tests(db, count=1)[0]
+    g0 = utils.create_goals_for_tests(db, (u0,))[0]
+    task = requests.NewTask(user_id=g0.user_id, goal_id=g0.id, description="task0")
+    db_task = api.create_task(db, task)
+    api.delete_task(db, db_task.id)

@@ -39,3 +39,25 @@ def delete_follow(db: Session, follow: requests.Follow):
         .filter(models.Follow.leader_id == follow.leader_id) \
         .delete()
     db.commit()
+
+def create_goal(db: Session, goal: requests.NewGoal) -> models.Goal:
+    db_goal = models.Goal(id=ULID().to_uuid4(), **goal.model_dump())
+    db.add(db_goal)
+    db.commit()
+    db.refresh(db_goal)
+    return db_goal
+
+def delete_goal(db: Session, goal_id: UUID):
+    db.query(models.Goal).filter(models.Goal.id == goal_id).delete()
+    db.commit()
+
+def create_task(db: Session, task: requests.NewTask) -> models.Task:
+    db_task = models.Task(id=ULID().to_uuid4(), **task.model_dump())
+    db.add(db_task)
+    db.commit()
+    db.refresh(db_task)
+    return db_task
+
+def delete_task(db: Session, task_id: UUID):
+    db.query(models.Task).filter(models.Task.id == task_id).delete()
+    db.commit()

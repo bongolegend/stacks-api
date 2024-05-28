@@ -22,14 +22,26 @@ def delete_all_entries_from_db():
     session.close()
 
 
-def create_users_for_tests(db : Session, count=2) -> tuple[models.User]:
+def create_users_for_tests(db: Session, count = 2) -> tuple[models.User]:
     users = []
     for i in range(count):
-        users.append(models.User(
-            id=ULID().to_uuid4(),
-            username=f"user{i}",
-            email=f"u{i}@a.b"))
+        u = requests.NewUser(email=f"u{i}@a.b", username=f"user{i}")
+        users.append(models.User(id=ULID().to_uuid4(),**u.model_dump()))
     db.add_all(users)
     db.commit()
     _ = [db.refresh(u) for u in users]
     return tuple(users)
+
+def create_goals_for_tests(db: Session, users: tuple[models.User], count = 1
+                           ) -> tuple[models.Goal]:
+    goals = []
+    for u in users:
+        for i in range(count):
+            g = requests.NewGoal(user_id=u.id, description=f"goal{i}")
+            goals.append(models.Goal(id=ULID().to_uuid4(), **g.model_dump()))
+    db.add_all(goals)
+    db.commit()
+    _ = [db.refresh(u) for g in goals]
+    return tuple(goals)
+
+
