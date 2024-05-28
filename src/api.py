@@ -9,7 +9,7 @@ from sqlalchemy.engine import Connection
 
 ### USER
 
-def create_user(conn: Connection, user: requests.NewUser) -> domain.User:
+def create_user(conn: Connection, user: domain.User) -> domain.User:
     stmt = insert(tables.users).values(**user.model_dump()).returning(tables.users)
     inserted = conn.execute(stmt).fetchone()._mapping
     return domain.User(**inserted)
@@ -57,14 +57,14 @@ def delete_user(conn: Connection, user_id: UUID) -> None:
 
 ### FOLLOW
 
-def create_follow(conn: Connection, follow: requests.Follow) -> domain.Follow:
+def create_follow(conn: Connection, follow: domain.Follow) -> domain.Follow:
     stmt = insert(tables.follows) \
         .values(follower_id=follow.follower_id, leader_id=follow.leader_id) \
         .returning(tables.follows)
     follow = conn.execute(stmt).fetchone()
     return domain.Follow(**follow._mapping)
 
-def delete_follow(conn: Connection, follow: requests.Follow) -> None:
+def delete_follow(conn: Connection, follow: domain.Follow) -> None:
     stmt = delete(tables.follows).where(
         and_(tables.follows.c.follower_id == follow.follower_id,
              tables.follows.c.leader_id == follow.leader_id))
@@ -72,7 +72,7 @@ def delete_follow(conn: Connection, follow: requests.Follow) -> None:
 
 ### GOAL
 
-def create_goal(conn: Connection, goal: requests.NewGoal) -> domain.Goal:
+def create_goal(conn: Connection, goal: domain.Goal) -> domain.Goal:
     stmt = insert(tables.goals).values(**goal.model_dump()).returning(tables.goals)
     inserted = conn.execute(stmt).fetchone()
     return domain.Goal(**inserted._mapping)
@@ -89,7 +89,7 @@ def delete_goal(conn: Connection, goal_id: UUID) -> None:
 
 ### TASK
 
-def create_task(conn: Connection, task: requests.NewTask) -> domain.Task:
+def create_task(conn: Connection, task: domain.Task) -> domain.Task:
     stmt = insert(tables.tasks).values(**task.model_dump()).returning(tables.tasks)
     inserted = conn.execute(stmt).fetchone()
     return domain.Task(**inserted._mapping)
