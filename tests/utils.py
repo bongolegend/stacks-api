@@ -1,8 +1,7 @@
 from sqlalchemy import MetaData, delete, insert
 from sqlalchemy.engine import Connection
-from ulid import ULID
 
-from src.types import requests, domain
+from src.types import domain
 from src.sqlalchemy.connection import engine
 from src.sqlalchemy import tables
 
