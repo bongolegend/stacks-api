@@ -27,17 +27,11 @@ class Follow(requests.NewFollow):
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
-class Brick(BaseModel):
-    """A Brick is an entity in a feed. It can be a goal or a task"""
+class Post(BaseModel):
+    """A Post is an entity in a timeline. It is a way to share goals and tasks"""
+    id: UUID = Field(default_factory=lambda: ULID().to_uuid4())
     user: User
-    primary: Goal | Task
-    secondary: Goal | None = None
+    goal: Goal
+    task: Task
+    sort_on: datetime
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-    @model_validator(mode="after")
-    def check_fields(self) -> Self:
-        if isinstance(self.primary, Goal) and self.secondary is not None:
-            raise ValueError('secondary must be None if primary is `domain.Goal`')
-        if isinstance(self.primary, Task) and self.secondary is None:
-            raise ValueError('secondary must be `domain.Goal` if primary is `domain.Task`')
-        return self

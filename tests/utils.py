@@ -20,19 +20,29 @@ def create_users_for_tests(conn: Connection, count = 2) -> list[domain.User]:
     """Create users and commit them to db."""
     users = []
     for i in range(count):
-        users.append(requests.NewUser(email=f"u{i}@a.b", username=f"user{i}").model_dump())
+        users.append(domain.User(email=f"u{i}@a.b", username=f"user{i}").model_dump(exclude_none=True))
     inserted = conn.execute(insert(tables.users).values(users).returning(tables.users)).all()
     conn.commit()
     inserted = [domain.User(**row._mapping) for row in inserted]
     return inserted
 
 def create_goals_for_tests(conn: Connection, users: list[domain.User], count = 2) -> list[domain.Goal]:
-    """Create goals for each user and commit them to db."""
+    """Create `count` goals for each user and commit them to db."""
     goals = []
     for u in users:
         for i in range(count):
-            goals.append(requests.NewGoal(user_id=u.id, description="goal-description").model_dump())
+            goals.append(domain.Goal(user_id=u.id, description="goal-description").model_dump(exclude_none=True))
     inserted = conn.execute(insert(tables.goals).values(goals).returning(tables.goals)).all()
     conn.commit()
     inserted = [domain.Goal(**row._mapping) for row in inserted]
+    return inserted
+
+def create_tasks_for_tests(conn: Connection, goals: list[domain.Goal], count = 2) -> list[domain.Task]:
+    tasks = [
+        domain.Task(user_id=g.user_id, goal_id=g.id, description="task-desc").model_dump(exclude_none=True) 
+        for _ in range(count) 
+        for g in goals]
+    inserted = conn.execute(insert(tables.tasks).values(tasks).returning(tables.tasks)).all()
+    conn.commit()
+    inserted = [domain.Task(**row._mapping) for row in inserted]
     return inserted

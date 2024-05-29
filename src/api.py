@@ -1,8 +1,8 @@
-from sqlalchemy import select, insert, delete, update, and_, or_, false
+from sqlalchemy import select, insert, delete, and_, or_
 from ulid import ULID
 from uuid import UUID
 
-from src.postgres import tables
+from src.postgres import tables, utils
 from src.types import requests, domain
 from sqlalchemy.engine import Connection
 
@@ -10,7 +10,7 @@ from sqlalchemy.engine import Connection
 ### USER
 
 def create_user(conn: Connection, user: domain.User) -> domain.User:
-    stmt = insert(tables.users).values(**user.model_dump()).returning(tables.users)
+    stmt = insert(tables.users).values(**user.model_dump(exclude_none=True)).returning(tables.users)
     inserted = conn.execute(stmt).fetchone()._mapping
     return domain.User(**inserted)
 
@@ -73,7 +73,7 @@ def delete_follow(conn: Connection, follow: domain.Follow) -> None:
 ### GOAL
 
 def create_goal(conn: Connection, goal: domain.Goal) -> domain.Goal:
-    stmt = insert(tables.goals).values(**goal.model_dump()).returning(tables.goals)
+    stmt = insert(tables.goals).values(**goal.model_dump(exclude_none=True)).returning(tables.goals)
     inserted = conn.execute(stmt).fetchone()
     return domain.Goal(**inserted._mapping)
 
@@ -90,7 +90,7 @@ def delete_goal(conn: Connection, goal_id: UUID) -> None:
 ### TASK
 
 def create_task(conn: Connection, task: domain.Task) -> domain.Task:
-    stmt = insert(tables.tasks).values(**task.model_dump()).returning(tables.tasks)
+    stmt = insert(tables.tasks).values(**task.model_dump(exclude_none=True)).returning(tables.tasks)
     inserted = conn.execute(stmt).fetchone()
     return domain.Task(**inserted._mapping)
 
@@ -111,3 +111,33 @@ def get_tasks(conn: Connection, user_id: UUID = None, goal_id: UUID = None) -> l
 def delete_task(conn: Connection, task_id: UUID) -> None:
     stmt = delete(tables.tasks).where(tables.tasks.c.id == task_id)
     conn.execute(stmt)
+
+### TIMELINE
+
+def generate_timeline_of_leaders(conn: Connection, follower_id: UUID) -> list[domain.Post]:  
+    """This also includes the posts of the follower_id"""
+    U_, G_, T_ = "u_", "g_", "t_" 
+    stmt = select(*utils.prefix(tables.users, U_),
+                  *utils.prefix(tables.goals, G_),
+                  *utils.prefix(tables.tasks, T_)) \
+                  .select_from(tables.users) \
+                  .join(tables.goals) \
+                  .join(tables.tasks) \
+                  .outerjoin(tables.follows, tables.users.c.id == tables.follows.c.leader_id) \
+                  .where(or_(
+                      tables.follows.c.follower_id == follower_id,
+                      # include yourself
+                      tables.users.c.id == follower_id))
+    
+    result = conn.execute(stmt).all()
+
+    posts = [
+        domain.Post(
+            user=utils.filter_by_prefix(row, U_),
+            goal=utils.filter_by_prefix(row, G_),
+            task=utils.filter_by_prefix(row, T_),
+            sort_on=row._mapping[f"{T_}created_at"]
+        )
+        for row in result
+    ]
+    return posts
