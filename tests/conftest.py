@@ -1,6 +1,6 @@
 import pytest
 
-from src.postgres.connection import engine
+from src.sqlalchemy.connection import engine
 from tests import utils
 
 @pytest.fixture(scope="function", autouse=True)

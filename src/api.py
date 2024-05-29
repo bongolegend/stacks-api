@@ -1,10 +1,10 @@
 from sqlalchemy import select, insert, delete, and_, or_
-from ulid import ULID
+from sqlalchemy.engine import Connection
+
 from uuid import UUID
 
-from src.postgres import tables, utils
-from src.types import requests, domain
-from sqlalchemy.engine import Connection
+from src.sqlalchemy import tables, utils
+from src.types import domain
 
 
 ### USER

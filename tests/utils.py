@@ -3,8 +3,8 @@ from sqlalchemy.engine import Connection
 from ulid import ULID
 
 from src.types import requests, domain
-from src.postgres.connection import engine
-from src.postgres import tables
+from src.sqlalchemy.connection import engine
+from src.sqlalchemy import tables
 
 DONT_DELETE_FROM_THESE = ("alembic_version",)
 
