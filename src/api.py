@@ -119,7 +119,8 @@ def generate_timeline_of_leaders(conn: Connection, follower_id: UUID) -> list[do
     U_, G_, T_ = "u_", "g_", "t_" 
     stmt = select(*utils.prefix(tables.users, U_),
                   *utils.prefix(tables.goals, G_),
-                  *utils.prefix(tables.tasks, T_)) \
+                  *utils.prefix(tables.tasks, T_),
+                  tables.tasks.c.created_at.label("sort_on")) \
                   .select_from(tables.users) \
                   .join(tables.goals) \
                   .join(tables.tasks) \
@@ -136,7 +137,7 @@ def generate_timeline_of_leaders(conn: Connection, follower_id: UUID) -> list[do
             user=utils.filter_by_prefix(row, U_),
             goal=utils.filter_by_prefix(row, G_),
             task=utils.filter_by_prefix(row, T_),
-            sort_on=row._mapping[f"{T_}created_at"]
+            sort_on=row.sort_on
         )
         for row in result
     ]
