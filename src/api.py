@@ -1,4 +1,4 @@
-from sqlalchemy import select, insert, delete, and_, or_
+from sqlalchemy import select, insert, delete, and_, or_, desc
 from sqlalchemy.engine import Connection
 
 from uuid import UUID
@@ -114,21 +114,23 @@ def delete_task(conn: Connection, task_id: UUID) -> None:
 
 ### TIMELINE
 
-def generate_timeline_of_leaders(conn: Connection, follower_id: UUID) -> list[domain.Post]:  
+def generate_timeline_of_leaders(conn: Connection, follower_id: UUID, count: int = 20) -> list[domain.Post]:  
     """This also includes the posts of the follower_id"""
     U_, G_, T_ = "u_", "g_", "t_" 
-    stmt = select(*utils.prefix(tables.users, U_),
+    stmt = (select(*utils.prefix(tables.users, U_),
                   *utils.prefix(tables.goals, G_),
                   *utils.prefix(tables.tasks, T_),
-                  tables.tasks.c.created_at.label("sort_on")) \
-                  .select_from(tables.users) \
-                  .join(tables.goals) \
-                  .join(tables.tasks) \
-                  .outerjoin(tables.follows, tables.users.c.id == tables.follows.c.leader_id) \
+                  tables.tasks.c.created_at.label("sort_on"))
+                  .select_from(tables.users)
+                  .join(tables.goals)
+                  .join(tables.tasks)
+                  .outerjoin(tables.follows, tables.users.c.id == tables.follows.c.leader_id)
                   .where(or_(
                       tables.follows.c.follower_id == follower_id,
                       # include yourself
                       tables.users.c.id == follower_id))
+                  .order_by(desc(tables.tasks.c.created_at))
+                  .limit(count))
     
     result = conn.execute(stmt).all()
 
