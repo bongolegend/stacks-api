@@ -31,19 +31,27 @@ def test_create_delete_follow(commit_as_you_go):
 
     assert api.get_followers(commit_as_you_go, u0.id) == []
 
-def test_create_get_delete_goal(commit_as_you_go):
+def test_create_get_update_delete_goal(commit_as_you_go):
     u0 = utils.create_users_for_tests(commit_as_you_go, count=1)[0]
     goal = domain.Goal(user_id=u0.id, description="goal-description")
     db_goal = api.create_goal(commit_as_you_go, goal)
     commit_as_you_go.commit()
 
     assert api.get_goals(commit_as_you_go, u0.id) == [db_goal]
+
+    updated_goal = api.update_goal(commit_as_you_go, db_goal.model_copy(update={"is_completed": True}))
+    commit_as_you_go.commit()
+
+    assert updated_goal.is_completed != db_goal.is_completed
+    assert updated_goal.created_at == db_goal.created_at
+    assert updated_goal.updated_at > db_goal.updated_at
+
     api.delete_goal(commit_as_you_go, db_goal.id)
     commit_as_you_go.commit()
 
     assert api.get_goals(commit_as_you_go, u0.id) == []
 
-def test_create_get_delete_task(commit_as_you_go):
+def test_create_get_update_delete_task(commit_as_you_go):
     u0 = utils.create_users_for_tests(commit_as_you_go, count=1)[0]
     g0 = utils.create_goals_for_tests(commit_as_you_go, [u0], count=1)[0]
     task = domain.Task(user_id=u0.id, goal_id=g0.id, description="task-description")
@@ -51,6 +59,14 @@ def test_create_get_delete_task(commit_as_you_go):
     commit_as_you_go.commit()
 
     assert api.get_tasks(commit_as_you_go, u0.id) == [db_task]
+
+    updated_task = api.update_task(commit_as_you_go, db_task.model_copy(update={"is_completed": True}))
+    commit_as_you_go.commit()
+
+    assert updated_task.is_completed != db_task.is_completed
+    assert updated_task.created_at == db_task.created_at
+    assert updated_task.updated_at > db_task.updated_at
+
     api.delete_task(commit_as_you_go, db_task.id)
     commit_as_you_go.commit()
 
