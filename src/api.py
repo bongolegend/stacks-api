@@ -4,7 +4,7 @@ from sqlalchemy.engine import Connection
 from uuid import UUID
 
 from src.sqlalchemy import tables, utils
-from src.types import domain
+from src.types import domain, requests
 
 
 ### USER
@@ -83,12 +83,11 @@ def read_goals(conn: Connection, user_id: UUID) -> list[domain.Goal]:
     goals = [domain.Goal(**row._mapping) for row in result]
     return goals
 
-def update_goal(conn: Connection, goal: domain.Goal) -> domain.Goal:
-    DISALLOW_UPDATES = {'user_id', 'id', 'created_at', 'updated_at'}    
+def update_goal(conn: Connection, goal_id: UUID, updates: requests.UpdateGoal) -> domain.Goal:
     stmt = (
         update(tables.goals)
-        .where(tables.goals.c.id == goal.id)
-        .values(**goal.model_dump(exclude=DISALLOW_UPDATES, exclude_none=True))
+        .where(tables.goals.c.id == goal_id)
+        .values(**updates.model_dump(exclude_none=True))
         .returning(tables.goals))
     updated = conn.execute(stmt).fetchone()
     return domain.Goal(**updated._mapping)
@@ -118,12 +117,11 @@ def read_tasks(conn: Connection, user_id: UUID = None, goal_id: UUID = None) -> 
     tasks = [domain.Task(**row._mapping) for row in result]
     return tasks
 
-def update_task(conn: Connection, task: domain.Task) -> domain.Task:
-    DISALLOW_UPDATES = {'id', 'user_id', 'goal_id', 'created_at', 'updated_at'}    
+def update_task(conn: Connection, task_id: UUID, updates: requests.UpdateTask) -> domain.Task:
     stmt = (
         update(tables.tasks)
-        .where(tables.tasks.c.id == task.id)
-        .values(**task.model_dump(exclude=DISALLOW_UPDATES, exclude_none=True))
+        .where(tables.tasks.c.id == task_id)
+        .values(**updates.model_dump(exclude_none=True))
         .returning(tables.tasks))
     updated = conn.execute(stmt).fetchone()
     return domain.Task(**updated._mapping)

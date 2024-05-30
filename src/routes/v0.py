@@ -63,6 +63,13 @@ def get_goals(user_id: UUID) -> list[domain.Goal]:
     return goals
 
 
+@router.patch("/goals/{goal_id}")
+def patch_goal(goal_id: UUID, updates: requests.UpdateGoal) -> domain.Goal:
+    with engine.begin() as conn:
+        goal = api.update_goal(conn, goal_id, updates)
+    return goal
+
+
 @router.delete("/goals/{goal_id}")
 def delete_goal(goal_id: UUID):
     with engine.begin() as conn:
@@ -84,6 +91,11 @@ def get_tasks(user_id: UUID | None = None, goal_id: UUID | None = None) -> list[
         tasks = api.read_tasks(conn, user_id=user_id, goal_id=goal_id)
     return tasks
 
+@router.patch("/tasks/{task_id}")
+def patch_task(task_id: UUID, updates: requests.UpdateTask) -> domain.Task:
+    with engine.begin() as conn:
+        goal = api.update_task(conn, task_id, updates)
+    return goal
 
 @router.delete("/tasks/{task_id}")
 def delete_task(task_id: UUID):

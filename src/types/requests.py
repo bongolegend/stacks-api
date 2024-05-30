@@ -24,6 +24,10 @@ class NewGoal(BaseModel):
     def validate_id(cls, value):
         return _validate_id(value)
 
+class UpdateGoal(BaseModel):
+    description: str | None = Field(None, min_length=1, max_length=280)
+    is_completed: bool | None = None
+
 class NewTask(BaseModel):
     user_id: UUID
     goal_id: UUID
@@ -34,6 +38,10 @@ class NewTask(BaseModel):
     @classmethod
     def validate_id(cls, value):
         return _validate_id(value)
+
+class UpdateTask(BaseModel):
+    description: str | None = Field(None, min_length=1, max_length=280)
+    is_completed: bool | None = None
 
 class NewFollow(BaseModel):
     follower_id: UUID

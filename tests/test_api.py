@@ -1,5 +1,5 @@
 from src import api
-from src.types import domain
+from src.types import domain, requests
 from tests import utils
 
 
@@ -39,7 +39,8 @@ def test_create_read_update_delete_goal(commit_as_you_go):
 
     assert api.read_goals(commit_as_you_go, u0.id) == [db_goal]
 
-    updated_goal = api.update_goal(commit_as_you_go, db_goal.model_copy(update={"is_completed": True}))
+    updates = requests.UpdateGoal(is_completed=True)
+    updated_goal = api.update_goal(commit_as_you_go, db_goal.id, updates)
     commit_as_you_go.commit()
 
     assert updated_goal.is_completed != db_goal.is_completed
@@ -60,7 +61,8 @@ def test_create_read_update_delete_task(commit_as_you_go):
 
     assert api.read_tasks(commit_as_you_go, u0.id) == [db_task]
 
-    updated_task = api.update_task(commit_as_you_go, db_task.model_copy(update={"is_completed": True}))
+    updates = requests.UpdateTask(is_completed=True)
+    updated_task = api.update_task(commit_as_you_go, db_task.id, updates)
     commit_as_you_go.commit()
 
     assert updated_task.is_completed != db_task.is_completed
