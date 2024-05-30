@@ -17,6 +17,7 @@ class NewUser(BaseModel):
 class NewGoal(BaseModel):
     user_id: UUID
     description: str = Field(..., min_length=1, max_length=280)
+    completed: bool = False
 
     @field_validator('user_id', mode="before")
     @classmethod
@@ -27,6 +28,7 @@ class NewTask(BaseModel):
     user_id: UUID
     goal_id: UUID
     description: str = Field(..., min_length=1, max_length=280)
+    completed: bool = False
 
     @field_validator('user_id', 'goal_id', mode="before")
     @classmethod
