@@ -1,5 +1,6 @@
 alembic
 email-validator
+fastapi
 psycopg2
 pydantic
 python-ulid
