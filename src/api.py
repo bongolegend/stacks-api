@@ -14,7 +14,7 @@ def create_user(conn: Connection, user: domain.User) -> domain.User:
     inserted = conn.execute(stmt).fetchone()._mapping
     return domain.User(**inserted)
 
-def get_user(
+def read_user(
         conn: Connection,
         id: UUID = None,
         username: str = None, 
@@ -33,7 +33,7 @@ def get_user(
         return
     return domain.User(**result._mapping)
 
-def get_followers(conn: Connection, leader_id: UUID) -> list[domain.User]:
+def read_followers(conn: Connection, leader_id: UUID) -> list[domain.User]:
     stmt = select(tables.users) \
         .select_from(tables.users) \
         .join(tables.follows, tables.users.c.id == tables.follows.c.follower_id) \
@@ -42,7 +42,7 @@ def get_followers(conn: Connection, leader_id: UUID) -> list[domain.User]:
     followers = [domain.User(**row._mapping) for row in result]
     return followers
 
-def get_leaders(conn: Connection, follower_id: UUID) -> list[domain.User]:
+def read_leaders(conn: Connection, follower_id: UUID) -> list[domain.User]:
     stmt = select(tables.users) \
         .select_from(tables.users) \
         .join(tables.follows, tables.users.c.id == tables.follows.c.leader_id) \
@@ -77,7 +77,7 @@ def create_goal(conn: Connection, goal: domain.Goal) -> domain.Goal:
     inserted = conn.execute(stmt).fetchone()
     return domain.Goal(**inserted._mapping)
 
-def get_goals(conn: Connection, user_id: UUID) -> list[domain.Goal]:
+def read_goals(conn: Connection, user_id: UUID) -> list[domain.Goal]:
     stmt = select(tables.goals).where(tables.goals.c.user_id == user_id)
     result = conn.execute(stmt).all()
     goals = [domain.Goal(**row._mapping) for row in result]
@@ -104,7 +104,7 @@ def create_task(conn: Connection, task: domain.Task) -> domain.Task:
     inserted = conn.execute(stmt).fetchone()
     return domain.Task(**inserted._mapping)
 
-def get_tasks(conn: Connection, user_id: UUID = None, goal_id: UUID = None) -> list[domain.Task]:
+def read_tasks(conn: Connection, user_id: UUID = None, goal_id: UUID = None) -> list[domain.Task]:
     if [user_id, goal_id].count(None) != 1:
         raise Exception("You must specify exactly one of `user_id`, `goal_id`")
     if user_id:

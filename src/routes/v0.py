@@ -23,7 +23,7 @@ def post_user(user: requests.NewUser) -> domain.User:
 @router.get("/users/{user_id}")
 def get_user(user_id: UUID) -> domain.User:
     with engine.begin() as conn:
-        user = api.get_user(conn, id=user_id)
+        user = api.read_user(conn, id=user_id)
     return user
 
 @router.delete("/users/{user_id}")
@@ -59,7 +59,7 @@ def post_goal(goal: requests.NewGoal) -> domain.Goal:
 @router.get("/goals")
 def get_goals(user_id: UUID) -> list[domain.Goal]:
     with engine.begin() as conn:
-        goals = api.get_goals(conn, user_id)
+        goals = api.read_goals(conn, user_id)
     return goals
 
 
@@ -81,7 +81,7 @@ def post_task(task: requests.NewTask) -> domain.Task:
 @router.get("/tasks")
 def get_tasks(user_id: UUID | None = None, goal_id: UUID | None = None) -> list[domain.Task]:
     with engine.begin() as conn:
-        tasks = api.get_tasks(conn, user_id=user_id, goal_id=goal_id)
+        tasks = api.read_tasks(conn, user_id=user_id, goal_id=goal_id)
     return tasks
 
 
