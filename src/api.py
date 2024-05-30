@@ -6,11 +6,13 @@ from uuid import UUID
 from src.sqlalchemy import tables, utils
 from src.types import domain, requests
 
+# exclude these fields from create functions
+EXCLUDED_FIELDS = {"created_at", "updated_at"}
 
 ### USER
 
 def create_user(conn: Connection, user: domain.User) -> domain.User:
-    stmt = insert(tables.users).values(**user.model_dump(exclude_none=True)).returning(tables.users)
+    stmt = insert(tables.users).values(**user.model_dump(exclude=EXCLUDED_FIELDS, exclude_none=True)).returning(tables.users)
     inserted = conn.execute(stmt).fetchone()._mapping
     return domain.User(**inserted)
 
@@ -59,7 +61,7 @@ def delete_user(conn: Connection, user_id: UUID) -> None:
 
 def create_follow(conn: Connection, follow: domain.Follow) -> domain.Follow:
     stmt = insert(tables.follows) \
-        .values(follower_id=follow.follower_id, leader_id=follow.leader_id) \
+        .values(**follow.model_dump(exclude=EXCLUDED_FIELDS)) \
         .returning(tables.follows)
     follow = conn.execute(stmt).fetchone()
     return domain.Follow(**follow._mapping)
@@ -73,7 +75,7 @@ def delete_follow(conn: Connection, follow: domain.Follow) -> None:
 ### GOAL
 
 def create_goal(conn: Connection, goal: domain.Goal) -> domain.Goal:
-    stmt = insert(tables.goals).values(**goal.model_dump(exclude_none=True)).returning(tables.goals)
+    stmt = insert(tables.goals).values(**goal.model_dump(exclude=EXCLUDED_FIELDS, exclude_none=True)).returning(tables.goals)
     inserted = conn.execute(stmt).fetchone()
     return domain.Goal(**inserted._mapping)
 
@@ -99,7 +101,7 @@ def delete_goal(conn: Connection, goal_id: UUID) -> None:
 ### TASK
 
 def create_task(conn: Connection, task: domain.Task) -> domain.Task:
-    stmt = insert(tables.tasks).values(**task.model_dump(exclude_none=True)).returning(tables.tasks)
+    stmt = insert(tables.tasks).values(**task.model_dump(exclude=EXCLUDED_FIELDS, exclude_none=True)).returning(tables.tasks)
     inserted = conn.execute(stmt).fetchone()
     return domain.Task(**inserted._mapping)
 
