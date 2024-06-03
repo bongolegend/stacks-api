@@ -2,6 +2,7 @@ import logging
 from uuid import UUID
 
 from fastapi import APIRouter
+from pydantic import EmailStr
 
 from src.types import requests, domain
 from src import api
@@ -26,6 +27,12 @@ def post_user(user: requests.NewUser) -> domain.User:
 def get_user(user_id: UUID) -> domain.User:
     with engine.begin() as conn:
         user = api.read_user(conn, id=user_id)
+    return user
+
+@router.get("/users")
+def get_user(email: EmailStr | None = None, username: str | None = None) -> domain.User:
+    with engine.begin() as conn:
+        user = api.read_user(conn, email=email, username=username)
     return user
 
 @router.delete("/users/{user_id}")

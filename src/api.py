@@ -22,7 +22,7 @@ def read_user(
         username: str = None, 
         email: str = None) -> domain.User | None:
     if [id, username, email].count(None) != 2:
-        raise ValueError("You must exactly one of id, username or email")
+        raise ValueError("You must pass exactly one of id, username or email")
     if id:
         filter = tables.users.c.id == id
     if username:
