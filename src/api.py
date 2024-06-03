@@ -1,4 +1,4 @@
-from sqlalchemy import select, insert, delete, and_, or_, desc, update
+from sqlalchemy import select, insert, delete, and_, or_, desc, update, case
 from sqlalchemy.engine import Connection
 
 from uuid import UUID
@@ -35,11 +35,17 @@ def read_user(
         return
     return domain.User(**result._mapping)
 
-# TODO add pagination
-def read_users(conn: Connection) -> list[domain.User]:
-    stmt = select(tables.users)
+def search_users(conn: Connection, user_id: UUID) -> list[domain.UserEnriched]:
+    stmt = (
+        select(tables.users, 
+               case((tables.follows.c.follower_id == user_id, True),
+                    else_=False).label('leader'))
+        .select_from(tables.users)
+        .outerjoin(tables.follows, tables.users.c.id == tables.follows.c.leader_id)
+        .where(tables.users.c.id != user_id)
+        )
     result = conn.execute(stmt).all()
-    users = [domain.User(**row._mapping) for row in result]
+    users = [domain.UserEnriched(**row._mapping) for row in result]
     return users
 
 def read_followers(conn: Connection, leader_id: UUID) -> list[domain.User]:

@@ -33,12 +33,16 @@ def get_user(user_id: UUID) -> domain.User:
 @router.get("/users")
 def get_user(email: EmailStr | None = None, username: str | None = None) -> list[domain.User]:
     with engine.begin() as conn:
-        if email is None and username is None:
-            return api.read_users(conn)
         user = api.read_user(conn, email=email, username=username)
     if user is None:
         return JSONResponse({"error": "User not found"}, status_code=404)
     return [user]
+
+@router.get("/users/{user_id}/search")
+def get_user_search(user_id: UUID) -> list[domain.UserEnriched]:
+    with engine.begin() as conn:
+        users = api.search_users(conn, user_id)
+    return users
 
 @router.delete("/users/{user_id}")
 def delete_user(user_id: UUID):

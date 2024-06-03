@@ -22,6 +22,9 @@ class CustomBase(BaseModel):
 class User(CustomBase, requests.NewUser):
     pass
 
+class UserEnriched(User):
+    leader: bool = False
+
 class Goal(CustomBase, requests.NewGoal):
     pass
 
