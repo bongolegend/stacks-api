@@ -2,7 +2,7 @@
 from datetime import datetime, timezone
 from typing_extensions import Self
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator
 from ulid import ULID
 from uuid import UUID
 
@@ -13,6 +13,11 @@ class CustomBase(BaseModel):
     id: UUID = Field(default_factory=lambda: ULID().to_uuid4())
     created_at: datetime | None = None
     updated_at: datetime | None = None
+
+    @field_validator("id", mode="before")
+    @classmethod
+    def validate_id(cls, value):
+        return requests.validate_uuid(value)
 
 class User(CustomBase, requests.NewUser):
     pass

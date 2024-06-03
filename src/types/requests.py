@@ -3,7 +3,7 @@ from uuid import UUID
 from pydantic import BaseModel, EmailStr, field_validator, Field
 
 
-def _validate_id(value) -> UUID:
+def validate_uuid(value) -> UUID:
     if isinstance(value, str):
         return UUID(value)
     if isinstance(value, UUID):
@@ -22,7 +22,7 @@ class NewGoal(BaseModel):
     @field_validator('user_id', mode="before")
     @classmethod
     def validate_id(cls, value):
-        return _validate_id(value)
+        return validate_uuid(value)
 
 class UpdateGoal(BaseModel):
     description: str | None = Field(None, min_length=1, max_length=280)
@@ -37,7 +37,7 @@ class NewTask(BaseModel):
     @field_validator('user_id', 'goal_id', mode="before")
     @classmethod
     def validate_id(cls, value):
-        return _validate_id(value)
+        return validate_uuid(value)
 
 class UpdateTask(BaseModel):
     description: str | None = Field(None, min_length=1, max_length=280)
@@ -50,4 +50,4 @@ class NewFollow(BaseModel):
     @field_validator('follower_id', "leader_id", mode="before")
     @classmethod
     def validate_id(cls, value):
-        return _validate_id(value)
+        return validate_uuid(value)

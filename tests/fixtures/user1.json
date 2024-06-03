@@ -1,0 +1,52 @@
+{
+    "user": {
+      "id": "a1a1a1a1-a1a1-a1a1-a1a1-a1a1a1a1a1a1",
+      "username": "bob",
+      "email": "bob@a.com"
+    },
+    "goals": [
+      {
+        "id": "b1b1b1b1-b1b1-b1b1-b1b1-b1b1b1b1b1b1",
+        "user_id": "a1a1a1a1-a1a1-a1a1-a1a1-a1a1a1a1a1a1",
+        "description": "Complete a half marathon in under 2 hours within the next 6 months.",
+        "is_completed": false
+      },
+      {
+        "id": "b2b2b2b2-b2b2-b2b2-b2b2-b2b2b2b2b2b2",
+        "user_id": "a1a1a1a1-a1a1-a1a1-a1a1-a1a1a1a1a1a1",
+        "description": "Read 20 books by the end of the year to improve knowledge and vocabulary.",
+        "is_completed": false
+      }
+    ],
+    "tasks": [
+      {
+        "id": "c1c1c1c1-c1c1-c1c1-c1c1-c1c1c1c1c1c1",
+        "user_id": "a1a1a1a1-a1a1-a1a1-a1a1-a1a1a1a1a1a1",
+        "goal_id": "b1b1b1b1-b1b1-b1b1-b1b1-b1b1b1b1b1b1",
+        "description": "Run 5 miles every Saturday morning to build endurance for the marathon.",
+        "is_completed": false
+      },
+      {
+        "id": "c2c2c2c2-c2c2-c2c2-c2c2-c2c2c2c2c2c2",
+        "user_id": "a1a1a1a1-a1a1-a1a1-a1a1-a1a1a1a1a1a1",
+        "goal_id": "b1b1b1b1-b1b1-b1b1-b1b1-b1b1b1b1b1b1",
+        "description": "Follow a structured training plan with interval workouts and long runs.",
+        "is_completed": false
+      },
+      {
+        "id": "c3c3c3c3-c3c3-c3c3-c3c3-c3c3c3c3c3c3",
+        "user_id": "a1a1a1a1-a1a1-a1a1-a1a1-a1a1a1a1a1a1",
+        "goal_id": "b2b2b2b2-b2b2-b2b2-b2b2-b2b2b2b2b2b2",
+        "description": "Read at least one book per month and keep a summary of each book.",
+        "is_completed": false
+      },
+      {
+        "id": "c4c4c4c4-c4c4-c4c4-c4c4-c4c4c4c4c4c4",
+        "user_id": "a1a1a1a1-a1a1-a1a1-a1a1-a1a1a1a1a1a1",
+        "goal_id": "b2b2b2b2-b2b2-b2b2-b2b2-b2b2b2b2b2b2",
+        "description": "Join a book club to discuss books and get recommendations.",
+        "is_completed": false
+      }
+    ]
+  }
+  

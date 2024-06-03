@@ -1,0 +1,3 @@
+from tests.utils import delete_all_entries_from_db
+
+delete_all_entries_from_db()
