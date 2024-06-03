@@ -1,6 +1,7 @@
 import logging
 from uuid import UUID
 
+from fastapi.responses import JSONResponse
 from fastapi import APIRouter
 from pydantic import EmailStr
 
@@ -34,7 +35,10 @@ def get_user(email: EmailStr | None = None, username: str | None = None) -> list
     with engine.begin() as conn:
         if email is None and username is None:
             return api.read_users(conn)
-        return api.read_user(conn, email=email, username=username)
+        user = api.read_user(conn, email=email, username=username)
+    if user is None:
+        return JSONResponse({"error": "User not found"}, status_code=404)
+    return [user]
 
 @router.delete("/users/{user_id}")
 def delete_user(user_id: UUID):
