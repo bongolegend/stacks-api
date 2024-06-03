@@ -31,7 +31,7 @@ class Post(BaseModel):
     """A Post is an entity in a timeline. It is a way to share goals and tasks"""
     id: UUID = Field(default_factory=lambda: ULID().to_uuid4())
     user: User
-    goal: Goal
-    task: Task
+    primary: Goal | Task
+    secondary: Goal | None = None
     sort_on: datetime
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

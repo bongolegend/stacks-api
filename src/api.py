@@ -136,20 +136,18 @@ def delete_task(conn: Connection, task_id: UUID) -> None:
 
 def generate_timeline_of_leaders(conn: Connection, follower_id: UUID, count: int = 20) -> list[domain.Post]:  
     """This also includes the posts of the follower_id"""
-    U_, G_, T_ = "u_", "g_", "t_" 
+    U_, G_ = "u_", "g_"
     stmt = (select(*utils.prefix(tables.users, U_),
                   *utils.prefix(tables.goals, G_),
-                  *utils.prefix(tables.tasks, T_),
-                  tables.tasks.c.created_at.label("sort_on"))
+                  tables.goals.c.created_at.label("sort_on"))
                   .select_from(tables.users)
                   .join(tables.goals)
-                  .join(tables.tasks)
                   .outerjoin(tables.follows, tables.users.c.id == tables.follows.c.leader_id)
                   .where(or_(
                       tables.follows.c.follower_id == follower_id,
                       # include yourself
                       tables.users.c.id == follower_id))
-                  .order_by(desc(tables.tasks.c.created_at))
+                  .order_by(desc(tables.goals.c.created_at))
                   .limit(count))
     
     result = conn.execute(stmt).all()
@@ -157,8 +155,7 @@ def generate_timeline_of_leaders(conn: Connection, follower_id: UUID, count: int
     posts = [
         domain.Post(
             user=utils.filter_by_prefix(row, U_),
-            goal=utils.filter_by_prefix(row, G_),
-            task=utils.filter_by_prefix(row, T_),
+            primary=utils.filter_by_prefix(row, G_),
             sort_on=row.sort_on
         )
         for row in result
