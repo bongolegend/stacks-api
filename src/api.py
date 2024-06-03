@@ -35,6 +35,13 @@ def read_user(
         return
     return domain.User(**result._mapping)
 
+# TODO add pagination
+def read_users(conn: Connection) -> list[domain.User]:
+    stmt = select(tables.users)
+    result = conn.execute(stmt).all()
+    users = [domain.User(**row._mapping) for row in result]
+    return users
+
 def read_followers(conn: Connection, leader_id: UUID) -> list[domain.User]:
     stmt = select(tables.users) \
         .select_from(tables.users) \

@@ -30,10 +30,11 @@ def get_user(user_id: UUID) -> domain.User:
     return user
 
 @router.get("/users")
-def get_user(email: EmailStr | None = None, username: str | None = None) -> domain.User:
+def get_user(email: EmailStr | None = None, username: str | None = None) -> list[domain.User]:
     with engine.begin() as conn:
-        user = api.read_user(conn, email=email, username=username)
-    return user
+        if email is None and username is None:
+            return api.read_users(conn)
+        return api.read_user(conn, email=email, username=username)
 
 @router.delete("/users/{user_id}")
 def delete_user(user_id: UUID):

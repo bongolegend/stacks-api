@@ -12,6 +12,11 @@ def test_create_read_delete_user(commit_as_you_go):
 
     assert api.read_user(commit_as_you_go, id=db_user.id) is None
 
+def test_read_users(commit_as_you_go):
+    u0, u1, u2 = utils.create_users_for_tests(commit_as_you_go, count=3)
+    commit_as_you_go.commit()
+    assert api.read_users(commit_as_you_go) == [u0, u1, u2]
+
 def test_read_followers_and_leaders(commit_as_you_go):
     u0, u1, u2 = utils.create_users_for_tests(commit_as_you_go, count=3)
     api.create_follow(commit_as_you_go, domain.Follow(follower_id=u1.id, leader_id=u0.id))
