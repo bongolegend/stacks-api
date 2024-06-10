@@ -20,6 +20,16 @@ def test_search_users(commit_as_you_go):
     assert len(s_users) == 2
     assert s_users[1].leader == False
 
+from tests.insert_fixtures import insert_data
+
+def test_search_users_with_unknown_edge_case(commit_as_you_go):
+    s_users = insert_data()
+    u0 = s_users[0]
+
+    searched_users = api.search_users(commit_as_you_go, u0.id)
+    assert len(searched_users) == len(s_users) - 1
+
+
 def test_read_followers_and_leaders(commit_as_you_go):
     u0, u1, u2 = utils.create_users_for_tests(commit_as_you_go, count=3)
     api.create_follow(commit_as_you_go, domain.Follow(follower_id=u1.id, leader_id=u0.id))
@@ -85,14 +95,14 @@ def test_create_read_update_delete_task(commit_as_you_go):
 def test_generate_timeline_of_leaders(commit_as_you_go):
     u0, u1, u2 = utils.create_users_for_tests(commit_as_you_go, count=3)
     goals = utils.create_goals_for_tests(commit_as_you_go, users=[u0, u1, u2])
-    # tasks = utils.create_tasks_for_tests(commit_as_you_go, goals)
+    tasks = utils.create_tasks_for_tests(commit_as_you_go, goals)
 
     api.create_follow(commit_as_you_go, domain.Follow(follower_id=u0.id, leader_id=u1.id))
     api.create_follow(commit_as_you_go, domain.Follow(follower_id=u0.id, leader_id=u2.id))
 
     commit_as_you_go.commit()
     timeline = api.generate_timeline_of_leaders(commit_as_you_go, u0.id)
-    assert len(timeline) == len(goals)
+    assert len(timeline) == len(tasks) + len(goals)
 
     timeline2 = api.generate_timeline_of_leaders(commit_as_you_go, u1.id)
-    assert len(timeline2) == 2
+    assert len(timeline2) == 6

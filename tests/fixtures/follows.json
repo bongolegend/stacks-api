@@ -9,16 +9,8 @@
       "leader_id": "a3a3a3a3-a3a3-a3a3-a3a3-a3a3a3a3a3a3"
     },
     {
-      "follower_id": "a1a1a1a1-a1a1-a1a1-a1a1-a1a1a1a1a1a1",
-      "leader_id": "a4a4a4a4-a4a4-a4a4-a4a4-a4a4a4a4a4a4"
-    },
-    {
       "follower_id": "a2a2a2a2-a2a2-a2a2-a2a2-a2a2a2a2a2a2",
       "leader_id": "a1a1a1a1-a1a1-a1a1-a1a1-a1a1a1a1a1a1"
-    },
-    {
-      "follower_id": "a3a3a3a3-a3a3-a3a3-a3a3-a3a3a3a3a3a3",
-      "leader_id": "a4a4a4a4-a4a4-a4a4-a4a4-a4a4a4a4a4a4"
     }
   ]
 }

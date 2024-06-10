@@ -33,6 +33,7 @@ def get_user(user_id: UUID) -> domain.User:
 @router.get("/users")
 def get_user(email: EmailStr | None = None, username: str | None = None) -> list[domain.User]:
     with engine.begin() as conn:
+        assert len(username) >= 3
         user = api.read_user(conn, email=email, username=username)
     if user is None:
         return JSONResponse({"error": "User not found"}, status_code=404)
@@ -42,6 +43,7 @@ def get_user(email: EmailStr | None = None, username: str | None = None) -> list
 def get_user_search(user_id: UUID) -> list[domain.UserEnriched]:
     with engine.begin() as conn:
         users = api.search_users(conn, user_id)
+    logging.debug(f"Users: {users}")
     return users
 
 @router.delete("/users/{user_id}")

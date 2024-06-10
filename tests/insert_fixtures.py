@@ -18,6 +18,8 @@ def insert_data():
     user_files = [f for f in os.listdir(fixtures_path) if f.endswith('.json') and 'user' in f]
     follow_file = os.path.join(fixtures_path, 'follows.json')
 
+    users = []
+
     with engine.connect() as connection:
         for user_file in user_files:
             data = load_json(os.path.join(fixtures_path, user_file))
@@ -25,8 +27,8 @@ def insert_data():
             goals = [domain.Goal(**goal) for goal in data['goals']]
             tasks = [domain.Task(**task) for task in data['tasks']]
             
-            # Insert user
             connection.execute(insert(tables.users).values(**user.model_dump(exclude_none=True)).on_conflict_do_nothing())
+            users.append(user)
             
             for goal in goals:
                 connection.execute(insert(tables.goals).values(**goal.model_dump(exclude_none=True)).on_conflict_do_nothing())
@@ -41,6 +43,8 @@ def insert_data():
             follow = domain.Follow(**follow)
             connection.execute(insert(tables.follows).values(**follow.model_dump(exclude_none=True)).on_conflict_do_nothing())
             connection.commit()
+    
+    return users
 
 if __name__ == "__main__":
     insert_data()

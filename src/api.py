@@ -149,18 +149,26 @@ def delete_task(conn: Connection, task_id: UUID) -> None:
 
 def generate_timeline_of_leaders(conn: Connection, follower_id: UUID, count: int = 20) -> list[domain.Post]:  
     """This also includes the posts of the follower_id"""
+    goals = _generate_timeline_of_leaders(conn, tables.goals, follower_id, count)
+    tasks = _generate_timeline_of_leaders(conn, tables.tasks, follower_id, count)
+    posts = sorted(goals + tasks, key=lambda post: post.sort_on, reverse=True)
+    return posts
+
+
+def _generate_timeline_of_leaders(conn: Connection, table, follower_id: UUID, count: int = 20) -> list[domain.Post]:
+    """table must be either `goals` or `tasks`"""
     U_, G_ = "u_", "g_"
     stmt = (select(*utils.prefix(tables.users, U_),
-                  *utils.prefix(tables.goals, G_),
-                  tables.goals.c.created_at.label("sort_on"))
+                  *utils.prefix(table, G_),
+                  table.c.created_at.label("sort_on"))
                   .select_from(tables.users)
-                  .join(tables.goals)
+                  .join(table)
                   .outerjoin(tables.follows, tables.users.c.id == tables.follows.c.leader_id)
                   .where(or_(
                       tables.follows.c.follower_id == follower_id,
                       # include yourself
                       tables.users.c.id == follower_id))
-                  .order_by(desc(tables.goals.c.created_at))
+                  .order_by(desc(table.c.created_at))
                   .limit(count))
     
     result = conn.execute(stmt).all()
