@@ -1,0 +1,7 @@
+dev:
+  db: 
+    url: postgresql://admin:password@postgres/stacks
+prod-debug:
+  db:
+    # if you run cloud sql auth proxy on host machine
+    url: postgresql://postgres:password@host.docker.internal:9999

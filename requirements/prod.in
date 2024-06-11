@@ -4,4 +4,5 @@ fastapi
 psycopg2
 pydantic
 python-ulid
+pyyaml
 sqlalchemy

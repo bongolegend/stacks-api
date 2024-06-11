@@ -79,7 +79,9 @@ python-multipart==0.0.9
 python-ulid==2.6.0
     # via -r requirements/prod.in
 pyyaml==6.0.1
-    # via uvicorn
+    # via
+    #   -r requirements/prod.in
+    #   uvicorn
 rich==13.7.1
     # via typer
 shellingham==1.5.4
