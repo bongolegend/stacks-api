@@ -5,3 +5,7 @@ prod-debug:
   db:
     # if you run cloud sql auth proxy on host machine
     url: postgresql://postgres:password@host.docker.internal:9999
+prod:
+  db:
+    # TODO security
+    url: postgresql+pg8000://postgres:password@/stacks?unix_sock=/cloudsql/stacks-426020:us-central1:baby-db-0/.s.PGSQL.5432

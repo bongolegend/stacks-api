@@ -1,8 +1,10 @@
 alembic
 email-validator
 fastapi
+gunicorn
 psycopg2
 pydantic
 python-ulid
 pyyaml
 sqlalchemy
+uvicorn[standard]
