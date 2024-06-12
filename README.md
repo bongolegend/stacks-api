@@ -35,3 +35,20 @@ ULIDs are lexographically sortable and are shorter than UUIDs so they make for g
 I am generating ULIDs server-side because Postgres doesn't support ULID generation out-of-the-box. I looked at installing an extension but there's a learning curve. https://github.com/pksunkara/pgx_ulid
 
 Typing throughout is defined as UUID, to be compatible with Postgres. But the UUIDs are generated as ULIDs, so they give us the benefits we want.
+
+## Deploy
+```
+docker build . -t stacks-api:prod
+```
+```
+docker tag stacks-api:prod us-central1-docker.pkg.dev/stacks-426020/stacks-api/stacks-api:prod
+```
+```
+gcloud auth login
+```
+```
+gcloud auth configure-docker us-central1-docker.pkg.dev
+```
+```
+docker push us-central1-docker.pkg.dev/stacks-426020/stacks-api/stacks-api:prod
+```

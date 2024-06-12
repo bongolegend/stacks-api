@@ -2,6 +2,7 @@ alembic
 email-validator
 fastapi
 gunicorn
+pg8000
 psycopg2
 pydantic
 python-ulid
