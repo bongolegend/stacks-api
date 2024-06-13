@@ -94,15 +94,14 @@ def test_create_read_update_delete_task(commit_as_you_go):
 
 def test_generate_timeline_of_leaders(commit_as_you_go):
     u0, u1, u2 = utils.create_users_for_tests(commit_as_you_go, count=3)
-    goals = utils.create_goals_for_tests(commit_as_you_go, users=[u0, u1, u2])
-    tasks = utils.create_tasks_for_tests(commit_as_you_go, goals)
+    goals = utils.create_goals_for_tests(commit_as_you_go, users=[u0, u1, u2], count=1)
 
-    api.create_follow(commit_as_you_go, domain.Follow(follower_id=u0.id, leader_id=u1.id))
-    api.create_follow(commit_as_you_go, domain.Follow(follower_id=u0.id, leader_id=u2.id))
+    api.create_follow(commit_as_you_go, domain.Follow(follower_id=u1.id, leader_id=u0.id))
+    api.create_follow(commit_as_you_go, domain.Follow(follower_id=u2.id, leader_id=u0.id))
 
     commit_as_you_go.commit()
     timeline = api.generate_timeline_of_leaders(commit_as_you_go, u0.id)
-    assert len(timeline) == len(tasks) + len(goals)
+    assert len(timeline) == 1
 
     timeline2 = api.generate_timeline_of_leaders(commit_as_you_go, u1.id)
-    assert len(timeline2) == 6
+    assert len(timeline2) == 2

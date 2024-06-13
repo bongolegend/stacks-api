@@ -1,4 +1,4 @@
-from sqlalchemy import select, insert, delete, and_, or_, desc, update, case
+from sqlalchemy import select, insert, delete, and_, or_, desc, update, case, union
 from sqlalchemy.engine import Connection
 
 from uuid import UUID
@@ -158,20 +158,23 @@ def generate_timeline_of_leaders(conn: Connection, follower_id: UUID, count: int
 def _generate_timeline_of_leaders(conn: Connection, table, follower_id: UUID, count: int = 20) -> list[domain.Post]:
     """table must be either `goals` or `tasks`"""
     U_, G_ = "u_", "g_"
-    stmt = (select(*utils.prefix(tables.users, U_),
+
+    base_query = (select(*utils.prefix(tables.users, U_),
                   *utils.prefix(table, G_),
                   table.c.created_at.label("sort_on"))
                   .select_from(tables.users)
-                  .join(table)
-                  .outerjoin(tables.follows, tables.users.c.id == tables.follows.c.leader_id)
-                  .where(or_(
-                      tables.follows.c.follower_id == follower_id,
-                      # include yourself
-                      tables.users.c.id == follower_id))
-                  .order_by(desc(table.c.created_at))
-                  .limit(count))
+                  .join(table))
     
-    result = conn.execute(stmt).all()
+    leaders_query = (base_query
+                        .join(tables.follows, tables.users.c.id == tables.follows.c.leader_id)
+                        .where(tables.follows.c.follower_id == follower_id))
+    
+    self_query = (base_query
+                    .where(table.c.user_id == follower_id))
+
+    union_query = union(leaders_query, self_query).order_by(desc("sort_on")).limit(count)
+
+    result = conn.execute(union_query).all()
 
     posts = [
         domain.Post(
