@@ -38,10 +38,12 @@ def read_user(
 def search_users(conn: Connection, user_id: UUID) -> list[domain.UserEnriched]:
     stmt = (
         select(tables.users, 
-               case((tables.follows.c.follower_id == user_id, True),
-                    else_=False).label('leader'))
+               case((tables.follows.c.leader_id == None, False),
+                    else_=True).label('leader'))
         .select_from(tables.users)
-        .outerjoin(tables.follows, tables.users.c.id == tables.follows.c.leader_id)
+        .outerjoin(tables.follows, 
+                   (tables.users.c.id == tables.follows.c.leader_id) 
+                   & (tables.follows.c.follower_id == user_id))
         .where(tables.users.c.id != user_id)
         )
     result = conn.execute(stmt).all()

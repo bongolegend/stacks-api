@@ -15,10 +15,17 @@ def test_create_read_delete_user(commit_as_you_go):
 def test_search_users(commit_as_you_go):
     u0, u1, u2 = utils.create_users_for_tests(commit_as_you_go, count=3)
     api.create_follow(commit_as_you_go, domain.Follow(follower_id=u0.id, leader_id=u1.id))
+    # this follow should not affect the search from the perspective of u0
+    api.create_follow(commit_as_you_go, domain.Follow(follower_id=u2.id, leader_id=u1.id))
+
     commit_as_you_go.commit()
     s_users = api.search_users(commit_as_you_go, u0.id)
     assert len(s_users) == 2
-    assert s_users[1].leader == False
+    s_u1 = next(filter(lambda u: u.id == u1.id, s_users))
+    s_u2 = next(filter(lambda u: u.id == u2.id, s_users))
+    assert s_u1.leader == True
+    assert s_u2.leader == False
+
 
 from tests.insert_fixtures import insert_data
 
