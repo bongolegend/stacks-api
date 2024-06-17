@@ -1,7 +1,7 @@
 version: '3.9'
 
 services:
-  fastapi:
+  base:
     build:
       context: .
       dockerfile: Dockerfile
@@ -12,9 +12,18 @@ services:
       - ./:/app/
     depends_on:
       - postgres
-    command: sh -c "sleep 1 && alembic upgrade head && while true; do sleep 1; done"
     restart: on-failure:4
+    command: sh -c "sleep 1 && alembic upgrade head && while true; do sleep 1; done"
+    profiles:
+      - base
 
+  fastapi:
+    extends:
+      service: base
+    command: sh -c "sleep 1 && alembic upgrade head && gunicorn"
+    profiles:
+      - fastapi
+  
   postgres:
     image: postgres:14.9-alpine
     ports:
