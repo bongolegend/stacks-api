@@ -1,25 +1,27 @@
 version: '3.9'
 
+x-common: &common
+  build:
+    context: .
+    dockerfile: Dockerfile
+    target: dev
+  ports:
+    - 8000:8000
+  volumes:
+    - ./:/app/
+  depends_on:
+    - postgres
+  restart: on-failure:4
+
 services:
   base:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: dev
-    ports:
-      - 8000:8000
-    volumes:
-      - ./:/app/
-    depends_on:
-      - postgres
-    restart: on-failure:4
+    <<: *common
     command: sh -c "sleep 1 && alembic upgrade head && while true; do sleep 1; done"
     profiles:
       - base
 
   fastapi:
-    extends:
-      service: base
+    <<: *common
     command: sh -c "sleep 1 && alembic upgrade head && gunicorn"
     profiles:
       - fastapi
