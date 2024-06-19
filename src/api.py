@@ -147,6 +147,26 @@ def delete_task(conn: Connection, task_id: UUID) -> None:
     stmt = delete(tables.tasks).where(tables.tasks.c.id == task_id)
     conn.execute(stmt)
 
+### REACTION
+
+def create_reaction(conn: Connection, reaction: domain.Reaction) -> domain.Reaction:
+    stmt = (
+        insert(tables.reactions)
+        .values(**reaction.model_dump(exclude=EXCLUDED_FIELDS, exclude_none=True))
+        .returning(tables.reactions))
+    inserted = conn.execute(stmt).fetchone()
+    return domain.Reaction(**inserted._mapping)
+
+def read_reactions(conn: Connection, user_id: UUID) -> list[domain.Reaction]:
+    stmt = select(tables.reactions).where(tables.reactions.c.user_id == user_id)
+    result = conn.execute(stmt).all()
+    reactions = [domain.Reaction(**row._mapping) for row in result]
+    return reactions
+
+def delete_reaction(conn: Connection, reaction_id: UUID) -> None:
+    stmt = delete(tables.reactions).where(tables.reactions.c.id == reaction_id)
+    conn.execute(stmt)
+
 ### TIMELINE
 
 def generate_timeline_of_leaders(conn: Connection, follower_id: UUID, count: int = 20) -> list[domain.Post]:  

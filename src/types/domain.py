@@ -35,6 +35,9 @@ class Follow(requests.NewFollow):
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
+class Reaction(CustomBase, requests.NewReaction):
+    pass
+
 class Post(BaseModel):
     """A Post is an entity in a timeline. It is a way to share goals and tasks"""
     id: UUID = Field(default_factory=lambda: ULID().to_uuid4())

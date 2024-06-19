@@ -1,6 +1,6 @@
 # The types.requests should only be used to validate requests in FastAPI
 from uuid import UUID
-from pydantic import BaseModel, EmailStr, field_validator, Field
+from pydantic import BaseModel, EmailStr, field_validator, Field, model_validator
 
 
 def validate_uuid(value) -> UUID:
@@ -51,3 +51,26 @@ class NewFollow(BaseModel):
     @classmethod
     def validate_id(cls, value):
         return validate_uuid(value)
+
+class NewReaction(BaseModel):
+    user_id: UUID
+    reaction: dict
+    reaction_library: str
+    task_id: UUID | None = None
+    goal_id: UUID | None = None
+
+    @field_validator('user_id', 'task_id', 'goal_id', mode="before")
+    @classmethod
+    def validate_id(cls, value):
+        return validate_uuid(value)
+    
+    @model_validator(mode="before")
+    @classmethod
+    def check_task_or_goal_id(cls, values):
+        task_id = values.get('task_id')
+        goal_id = values.get('goal_id')
+
+        if (task_id is None and goal_id is None) or (task_id is not None and goal_id is not None):
+            raise ValueError('Exactly one of task_id or goal_id must be provided')
+
+        return values

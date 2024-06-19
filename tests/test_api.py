@@ -99,6 +99,23 @@ def test_create_read_update_delete_task(commit_as_you_go):
 
     assert api.read_tasks(commit_as_you_go, u0.id) == []
 
+
+def test_create_delete_reaction(commit_as_you_go):
+    u0 = utils.create_users_for_tests(commit_as_you_go, count=1)[0]
+    g0 = utils.create_goals_for_tests(commit_as_you_go, [u0], count=1)[0]
+    t0 = utils.create_tasks_for_tests(commit_as_you_go, [g0], count=1)[0]
+
+    reaction = domain.Reaction(user_id=u0.id, reaction={'reaction': 'value'}, reaction_library='library', task_id=t0.id)
+    db_reaction = api.create_reaction(commit_as_you_go, reaction)
+    commit_as_you_go.commit()
+
+    assert api.read_reactions(commit_as_you_go, u0.id) == [db_reaction]
+
+    api.delete_reaction(commit_as_you_go, db_reaction.id)
+    commit_as_you_go.commit()
+
+    assert api.read_reactions(commit_as_you_go, u0.id) == []
+
 def test_generate_timeline_of_leaders(commit_as_you_go):
     u0, u1, u2 = utils.create_users_for_tests(commit_as_you_go, count=3)
     goals = utils.create_goals_for_tests(commit_as_you_go, users=[u0, u1, u2], count=1)

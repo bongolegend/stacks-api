@@ -1,5 +1,5 @@
 from sqlalchemy import MetaData, Table, Column, String, Text, Boolean, DateTime, ForeignKey, func, text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 
 metadata = MetaData()
 
@@ -38,6 +38,19 @@ tasks = Table(
     Column('goal_id', UUID(as_uuid=True), ForeignKey('goals.id'), nullable=False),
     Column('description', Text, nullable=False),
     Column('is_completed', Boolean, default=False),
+    Column('created_at', DateTime(timezone=True), server_default=func.now()),
+    Column('updated_at', DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+)
+
+
+reactions = Table(
+    'reactions', metadata,
+    Column('id', UUID(as_uuid=True), primary_key=True, server_default=text("uuid_generate_v4()")),
+    Column('user_id', UUID(as_uuid=True), ForeignKey('users.id', ondelete="CASCADE"), nullable=False),
+    Column('goal_id', UUID(as_uuid=True), ForeignKey('goals.id'), nullable=True),
+    Column('task_id', UUID(as_uuid=True), ForeignKey('tasks.id'), nullable=True),
+    Column('reaction', JSONB, nullable=False),
+    Column('reaction_library', Text, nullable=False),
     Column('created_at', DateTime(timezone=True), server_default=func.now()),
     Column('updated_at', DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 )

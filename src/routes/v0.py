@@ -143,3 +143,13 @@ def get_timeline_of_leaders(follower_id: UUID) -> list[domain.Post]:
         timeline = api.generate_timeline_of_leaders(conn, follower_id)
     logging.debug(f"Timeline: {timeline}")
     return timeline
+
+
+### REACTIONS
+
+@router.post("/reactions")
+def post_reaction(reaction: requests.NewReaction) -> domain.Reaction:
+    logging.debug(f"Creating reaction: {reaction}")
+    with engine.begin() as conn:
+        s_reaction = api.create_reaction(conn, domain.Reaction(**reaction.model_dump()))
+    return s_reaction
