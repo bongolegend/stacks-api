@@ -9,6 +9,14 @@ def validate_uuid(value) -> UUID:
     if isinstance(value, UUID):
         return value
  
+def check_task_or_goal_id(values: dict) -> dict:
+    task_id = values.get('task_id')
+    goal_id = values.get('goal_id')
+
+    if (task_id is None and goal_id is None) or (task_id is not None and goal_id is not None):
+        raise ValueError('Exactly one of task_id or goal_id must be provided')
+
+    return values
 
 class NewUser(BaseModel):
     email: EmailStr
@@ -67,10 +75,20 @@ class NewReaction(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def check_task_or_goal_id(cls, values):
-        task_id = values.get('task_id')
-        goal_id = values.get('goal_id')
+        return check_task_or_goal_id(values)
 
-        if (task_id is None and goal_id is None) or (task_id is not None and goal_id is not None):
-            raise ValueError('Exactly one of task_id or goal_id must be provided')
+class NewComment(BaseModel):
+    user_id: UUID
+    comment: str
+    task_id: UUID | None = None
+    goal_id: UUID | None = None
 
-        return values
+    @field_validator('user_id', 'task_id', 'goal_id', mode="before")
+    @classmethod
+    def validate_id(cls, value):
+        return validate_uuid(value)
+    
+    @model_validator(mode="before")
+    @classmethod
+    def check_task_or_goal_id(cls, values):
+        return check_task_or_goal_id(values)

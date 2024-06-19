@@ -54,3 +54,15 @@ reactions = Table(
     Column('created_at', DateTime(timezone=True), server_default=func.now()),
     Column('updated_at', DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 )
+
+
+comments = Table(
+    'comments', metadata,
+    Column('id', UUID(as_uuid=True), primary_key=True, server_default=text("uuid_generate_v4()")),
+    Column('user_id', UUID(as_uuid=True), ForeignKey('users.id', ondelete="CASCADE"), nullable=False),
+    Column('goal_id', UUID(as_uuid=True), ForeignKey('goals.id'), nullable=True),
+    Column('task_id', UUID(as_uuid=True), ForeignKey('tasks.id'), nullable=True),
+    Column('comment', Text, nullable=False),
+    Column('created_at', DateTime(timezone=True), server_default=func.now()),
+    Column('updated_at', DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+)

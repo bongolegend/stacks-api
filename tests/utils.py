@@ -46,7 +46,7 @@ def create_tasks_for_tests(conn: Connection, goals: list[domain.Goal], count = 2
     inserted = [domain.Task(**row._mapping) for row in inserted]
     return inserted
 
-# create reactions for tests
+
 def create_reactions_for_tests(conn: Connection, user: domain.User, goals: list[domain.Goal], count = 2) -> list[domain.Reaction]:
     reactions = []
     for g in goals:
@@ -61,4 +61,14 @@ def create_reactions_for_tests(conn: Connection, user: domain.User, goals: list[
     inserted = conn.execute(insert(tables.reactions).values(reactions).returning(tables.reactions)).all()
     conn.commit()
     inserted = [domain.Reaction(**row._mapping) for row in inserted]
+    return inserted
+
+def create_comments_for_tests(conn: Connection, user: domain.User, goals: list[domain.Goal], count = 2) -> list[domain.Comment]:
+    comments = []
+    for g in goals:
+        for i in range(count):
+            comments.append(domain.Comment(user_id=user.id, goal_id=g.id, comment="comment").model_dump(exclude_none=True))
+    inserted = conn.execute(insert(tables.comments).values(comments).returning(tables.comments)).all()
+    conn.commit()
+    inserted = [domain.Comment(**row._mapping) for row in inserted]
     return inserted

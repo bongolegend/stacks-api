@@ -1,7 +1,7 @@
 from collections import defaultdict
 from uuid import UUID
 
-from sqlalchemy import select, insert, delete, and_, or_, desc, update, case, union
+from sqlalchemy import select, insert, delete, and_, or_, desc, update, case, union, Table, Row
 from sqlalchemy.engine import Connection
 
 from src.sqlalchemy import tables, utils
@@ -168,6 +168,28 @@ def delete_reaction(conn: Connection, reaction_id: UUID) -> None:
     stmt = delete(tables.reactions).where(tables.reactions.c.id == reaction_id)
     conn.execute(stmt)
 
+
+### COMMENT
+
+def create_comment(conn: Connection, comment: domain.Comment) -> domain.Comment:
+    stmt = (
+        insert(tables.comments)
+        .values(**comment.model_dump(exclude=EXCLUDED_FIELDS, exclude_none=True))
+        .returning(tables.comments))
+    inserted = conn.execute(stmt).fetchone()
+    return domain.Comment(**inserted._mapping)
+
+def read_comments(conn: Connection, user_id: UUID) -> list[domain.Comment]:
+    stmt = select(tables.comments).where(tables.comments.c.user_id == user_id)
+    result = conn.execute(stmt).all()
+    comments = [domain.Comment(**row._mapping) for row in result]
+    return comments
+
+def delete_comment(conn: Connection, comment_id: UUID) -> None:
+    stmt = delete(tables.comments).where(tables.comments.c.id == comment_id)
+    conn.execute(stmt)
+
+
 ### TIMELINE
 
 def generate_timeline_of_leaders(conn: Connection, follower_id: UUID, count: int = 20) -> list[domain.Post]:  
@@ -178,16 +200,9 @@ def generate_timeline_of_leaders(conn: Connection, follower_id: UUID, count: int
     return posts
 
 
-def _generate_timeline_of_leaders(conn: Connection, table, follower_id: UUID, count: int = 20) -> list[domain.Post]:
+def _generate_timeline_of_leaders(conn: Connection, table: Table, follower_id: UUID, count: int = 20) -> list[domain.Post]:
     """table must be either `goals` or `tasks`"""
     U_ = "u_"
-
-    if table == tables.goals:
-        reaction_foreign_key = tables.reactions.c.goal_id
-    elif table == tables.tasks:
-        reaction_foreign_key = tables.reactions.c.task_id
-    else:
-        raise ValueError("table must be either `goals` or `tasks`")
 
     base_query = (select(*utils.prefix(tables.users, U_),
                   table,
@@ -206,24 +221,41 @@ def _generate_timeline_of_leaders(conn: Connection, table, follower_id: UUID, co
 
     primary_result = conn.execute(union_query).all()
 
-    reactions_query = (select(tables.reactions)
-                       .join(table, reaction_foreign_key == table.c.id)
-                       .where(reaction_foreign_key.in_([row.id for row in primary_result])))
-
-    reactions_result = conn.execute(reactions_query).all()
-
-    reactions = defaultdict(list)
-    for row in reactions_result:
-        key = row.goal_id or row.task_id
-        reactions[key].append(domain.Reaction(**row._mapping))
+    reactions = _read_reactions_or_comments(conn, table, primary_result, tables.reactions, domain.Reaction)
+    comments = _read_reactions_or_comments(conn, table, primary_result, tables.comments, domain.Comment)
 
     posts = [
         domain.Post(
             user=utils.filter_by_prefix(row, U_),
             primary={**row._mapping, "table": table.name},
             reactions=reactions.get(row.id, []),
+            comments=comments.get(row.id, []),
             sort_on=row.sort_on
         )
         for row in primary_result
     ]
     return posts
+
+
+def _read_reactions_or_comments(
+        conn: Connection, primary_table: Table, primary_result: list[Row], 
+        secondary_table: Table, result_type: domain.Reaction | domain.Comment
+        ) -> dict[UUID, list[domain.Reaction | domain.Comment]]:
+    if primary_table == tables.goals:
+        foreign_key = secondary_table.c.goal_id
+    elif primary_table == tables.tasks:
+        foreign_key = secondary_table.c.task_id
+    else:
+        raise ValueError("table must be either `goals` or `tasks`")
+
+    query = (select(secondary_table)
+                       .join(primary_table, foreign_key == primary_table.c.id)
+                       .where(foreign_key.in_([row.id for row in primary_result])))
+
+    result = conn.execute(query).all()
+
+    secondaries = defaultdict(list)
+    for row in result:
+        key = row.goal_id or row.task_id
+        secondaries[key].append(result_type(**row._mapping))
+    return secondaries

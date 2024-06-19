@@ -100,7 +100,7 @@ def test_create_read_update_delete_task(commit_as_you_go):
     assert api.read_tasks(commit_as_you_go, u0.id) == []
 
 
-def test_create_delete_reaction(commit_as_you_go):
+def test_create_read_delete_reaction(commit_as_you_go):
     u0 = utils.create_users_for_tests(commit_as_you_go, count=1)[0]
     g0 = utils.create_goals_for_tests(commit_as_you_go, [u0], count=1)[0]
     t0 = utils.create_tasks_for_tests(commit_as_you_go, [g0], count=1)[0]
@@ -116,10 +116,27 @@ def test_create_delete_reaction(commit_as_you_go):
 
     assert api.read_reactions(commit_as_you_go, u0.id) == []
 
+def test_create_read_delete_comment(commit_as_you_go):
+    u0 = utils.create_users_for_tests(commit_as_you_go, count=1)[0]
+    g0 = utils.create_goals_for_tests(commit_as_you_go, [u0], count=1)[0]
+    t0 = utils.create_tasks_for_tests(commit_as_you_go, [g0], count=1)[0]
+
+    comment = domain.Comment(user_id=u0.id, comment='comment', task_id=t0.id)
+    db_comment = api.create_comment(commit_as_you_go, comment)
+    commit_as_you_go.commit()
+
+    assert api.read_comments(commit_as_you_go, u0.id) == [db_comment]
+
+    api.delete_comment(commit_as_you_go, db_comment.id)
+    commit_as_you_go.commit()
+
+    assert api.read_comments(commit_as_you_go, u0.id) == []
+
 def test_generate_timeline_of_leaders(commit_as_you_go):
     u0, u1, u2 = utils.create_users_for_tests(commit_as_you_go, count=3)
     goals = utils.create_goals_for_tests(commit_as_you_go, users=[u0, u1, u2], count=1)
     reactions = utils.create_reactions_for_tests(commit_as_you_go, u0, goals, count=1)
+    comments = utils.create_comments_for_tests(commit_as_you_go, u0, goals, count=1)
 
     api.create_follow(commit_as_you_go, domain.Follow(follower_id=u1.id, leader_id=u0.id))
     api.create_follow(commit_as_you_go, domain.Follow(follower_id=u2.id, leader_id=u0.id))
@@ -128,6 +145,7 @@ def test_generate_timeline_of_leaders(commit_as_you_go):
     timeline = api.generate_timeline_of_leaders(commit_as_you_go, u0.id)
     assert len(timeline) == 1
     assert all([len(p.reactions) == 1 for p in timeline])
+    assert all([len(p.comments) == 1 for p in timeline])
 
     timeline2 = api.generate_timeline_of_leaders(commit_as_you_go, u1.id)
     assert len(timeline2) == 2

@@ -44,12 +44,16 @@ class Follow(requests.NewFollow):
 class Reaction(CustomBase, requests.NewReaction):
     pass
 
+class Comment(CustomBase, requests.NewComment):
+    pass
+
 class Post(BaseModel):
     """A Post is an entity in a timeline. It is a way to share goals and tasks"""
     id: UUID = Field(default_factory=lambda: ULID().to_uuid4())
     user: User
     primary: GoalEnriched | TaskEnriched
     reactions: list[Reaction] = []
+    comments: list[Comment] = []
     secondary: GoalEnriched | None = None
     sort_on: datetime
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

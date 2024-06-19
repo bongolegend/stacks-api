@@ -153,3 +153,13 @@ def post_reaction(reaction: requests.NewReaction) -> domain.Reaction:
     with engine.begin() as conn:
         s_reaction = api.create_reaction(conn, domain.Reaction(**reaction.model_dump()))
     return s_reaction
+
+
+### COMMENTS
+
+@router.post("/comments")
+def post_comment(comment: requests.NewComment) -> domain.Comment:
+    logging.debug(f"Creating comment: {comment}")
+    with engine.begin() as conn:
+        s_comment = api.create_comment(conn, domain.Comment(**comment.model_dump()))
+    return s_comment
