@@ -201,7 +201,7 @@ def _generate_timeline_of_leaders(conn: Connection, table, follower_id: UUID, co
     posts = [
         domain.Post(
             user=utils.filter_by_prefix(row, U_),
-            primary=utils.filter_by_prefix(row, G_),
+            primary={**utils.filter_by_prefix(row, G_), "table": table.name},
             sort_on=row.sort_on
         )
         for row in result
