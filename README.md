@@ -28,6 +28,11 @@ Add new deps to `requirements/*.in`, then run `./update-deps.sh` to recompile th
 ### Postgres changes
 ```alembic revision --autogenerate -m "message"```
 
+#### Postgres Changes on prod
+```./cloud-sql-proxy $STACKS_DB_CONNECTION --port 9999```
+
+```ENV=prod-debug alembic upgrade head```
+
 ### Deploy
 ```
 gcloud auth login

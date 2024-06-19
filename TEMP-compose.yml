@@ -1,0 +1,49 @@
+version: '3.9'
+
+# x-common: &common
+#   build:
+#     context: .
+#     dockerfile: Dockerfile
+#     target: dev
+#   ports:
+#     - 8000:8000
+#   volumes:
+#     - ./:/app/
+#   depends_on:
+#     - postgres
+#   restart: on-failure:4
+
+services:
+  # base:
+  #   <<: *common
+  #   command: sh -c "sleep 1 && alembic upgrade head && while true; do sleep 1; done"
+  #   profiles:
+  #     - base
+
+  # fastapi:
+  #   <<: *common
+  #   command: sh -c "sleep 1 && alembic upgrade head && gunicorn"
+  #   profiles:
+  #     - fastapi
+  base:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    ports:
+      - 8000:8000
+    volumes:
+      - ./:/app/
+    depends_on:
+      - postgres
+    restart: on-failure:4
+    command: sh -c "sleep 1 && alembic upgrade head && while true; do sleep 1; done"
+  
+  postgres:
+    image: postgres:14.9-alpine
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=stacks
