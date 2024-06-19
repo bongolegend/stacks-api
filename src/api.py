@@ -179,7 +179,7 @@ def create_comment(conn: Connection, comment: domain.Comment) -> domain.Comment:
     inserted = conn.execute(stmt).fetchone()
     return domain.Comment(**inserted._mapping)
 
-def read_comments(conn: Connection, user_id: UUID = None, goal_id: UUID = None, task_id: UUID = None) -> list[domain.Comment]:
+def read_comments(conn: Connection, user_id: UUID = None, goal_id: UUID = None, task_id: UUID = None) -> list[domain.CommentEnriched]:
     # only one of user_id, goal_id, or task_id should be provided
     if [user_id, goal_id, task_id].count(None) != 2:
         raise ValueError("You must pass exactly one of user_id, goal_id or task_id")
@@ -190,9 +190,16 @@ def read_comments(conn: Connection, user_id: UUID = None, goal_id: UUID = None, 
     elif task_id:
         filter = tables.comments.c.task_id == task_id
     
-    stmt = select(tables.comments).where(filter)
+    stmt = (
+        select(tables.comments, *utils.prefix(tables.users, "u_"))
+        .join(tables.users)
+        .where(filter))
     result = conn.execute(stmt).all()
-    comments = [domain.Comment(**row._mapping) for row in result]
+    comments = [
+        domain.CommentEnriched(
+            user=utils.filter_by_prefix(row, "u_"),
+            **row._mapping)
+        for row in result]
     return comments
 
 def delete_comment(conn: Connection, comment_id: UUID) -> None:

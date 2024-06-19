@@ -125,7 +125,7 @@ def test_create_read_delete_comment(commit_as_you_go):
     db_comment = api.create_comment(commit_as_you_go, comment)
     commit_as_you_go.commit()
 
-    assert api.read_comments(commit_as_you_go, u0.id) == [db_comment]
+    assert api.read_comments(commit_as_you_go, u0.id)[0].id == db_comment.id
 
     api.delete_comment(commit_as_you_go, db_comment.id)
     commit_as_you_go.commit()
@@ -145,7 +145,7 @@ def test_generate_timeline_of_leaders(commit_as_you_go):
     timeline = api.generate_timeline_of_leaders(commit_as_you_go, u0.id)
     assert len(timeline) == 1
     assert all([len(p.reactions) == 1 for p in timeline])
-    assert all([len(p.comments) == 1 for p in timeline])
+    assert all([p.comments_count == 1 for p in timeline])
 
     timeline2 = api.generate_timeline_of_leaders(commit_as_you_go, u1.id)
     assert len(timeline2) == 2

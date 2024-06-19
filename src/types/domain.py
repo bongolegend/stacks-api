@@ -47,6 +47,10 @@ class Reaction(CustomBase, requests.NewReaction):
 class Comment(CustomBase, requests.NewComment):
     pass
 
+class CommentEnriched(Comment):
+    user: User
+
+
 class Post(BaseModel):
     """A Post is an entity in a timeline. It is a way to share goals and tasks"""
     id: UUID = Field(default_factory=lambda: ULID().to_uuid4())
