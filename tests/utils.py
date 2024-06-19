@@ -45,3 +45,20 @@ def create_tasks_for_tests(conn: Connection, goals: list[domain.Goal], count = 2
     conn.commit()
     inserted = [domain.Task(**row._mapping) for row in inserted]
     return inserted
+
+# create reactions for tests
+def create_reactions_for_tests(conn: Connection, user: domain.User, goals: list[domain.Goal], count = 2) -> list[domain.Reaction]:
+    reactions = []
+    for g in goals:
+        for i in range(count):
+            reactions.append(domain.Reaction(user_id=user.id, goal_id=g.id, reaction={
+                'name': 'beaming face with smiling eyes', 
+                'emoji': '😁', 
+                'unicode_version': '0.6', 
+                'slug': 'beaming_face_with_smiling_eyes', 
+                'toneEnabled': False},
+                reaction_library='rn-emoji-keyboard:^1.7.0').model_dump(exclude_none=True))
+    inserted = conn.execute(insert(tables.reactions).values(reactions).returning(tables.reactions)).all()
+    conn.commit()
+    inserted = [domain.Reaction(**row._mapping) for row in inserted]
+    return inserted

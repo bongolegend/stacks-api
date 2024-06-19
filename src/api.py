@@ -1,7 +1,8 @@
+from collections import defaultdict
+from uuid import UUID
+
 from sqlalchemy import select, insert, delete, and_, or_, desc, update, case, union
 from sqlalchemy.engine import Connection
-
-from uuid import UUID
 
 from src.sqlalchemy import tables, utils
 from src.types import domain, requests
@@ -179,10 +180,17 @@ def generate_timeline_of_leaders(conn: Connection, follower_id: UUID, count: int
 
 def _generate_timeline_of_leaders(conn: Connection, table, follower_id: UUID, count: int = 20) -> list[domain.Post]:
     """table must be either `goals` or `tasks`"""
-    U_, G_ = "u_", "g_"
+    U_ = "u_"
+
+    if table == tables.goals:
+        reaction_foreign_key = tables.reactions.c.goal_id
+    elif table == tables.tasks:
+        reaction_foreign_key = tables.reactions.c.task_id
+    else:
+        raise ValueError("table must be either `goals` or `tasks`")
 
     base_query = (select(*utils.prefix(tables.users, U_),
-                  *utils.prefix(table, G_),
+                  table,
                   table.c.created_at.label("sort_on"))
                   .select_from(tables.users)
                   .join(table))
@@ -196,14 +204,26 @@ def _generate_timeline_of_leaders(conn: Connection, table, follower_id: UUID, co
 
     union_query = union(leaders_query, self_query).order_by(desc("sort_on")).limit(count)
 
-    result = conn.execute(union_query).all()
+    primary_result = conn.execute(union_query).all()
+
+    reactions_query = (select(tables.reactions)
+                       .join(table, reaction_foreign_key == table.c.id)
+                       .where(reaction_foreign_key.in_([row.id for row in primary_result])))
+
+    reactions_result = conn.execute(reactions_query).all()
+
+    reactions = defaultdict(list)
+    for row in reactions_result:
+        key = row.goal_id or row.task_id
+        reactions[key].append(domain.Reaction(**row._mapping))
 
     posts = [
         domain.Post(
             user=utils.filter_by_prefix(row, U_),
-            primary={**utils.filter_by_prefix(row, G_), "table": table.name},
+            primary={**row._mapping, "table": table.name},
+            reactions=reactions.get(row.id, []),
             sort_on=row.sort_on
         )
-        for row in result
+        for row in primary_result
     ]
     return posts

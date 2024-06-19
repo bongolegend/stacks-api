@@ -49,6 +49,7 @@ class Post(BaseModel):
     id: UUID = Field(default_factory=lambda: ULID().to_uuid4())
     user: User
     primary: GoalEnriched | TaskEnriched
+    reactions: list[Reaction] = []
     secondary: GoalEnriched | None = None
     sort_on: datetime
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

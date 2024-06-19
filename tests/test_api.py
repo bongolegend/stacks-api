@@ -119,6 +119,7 @@ def test_create_delete_reaction(commit_as_you_go):
 def test_generate_timeline_of_leaders(commit_as_you_go):
     u0, u1, u2 = utils.create_users_for_tests(commit_as_you_go, count=3)
     goals = utils.create_goals_for_tests(commit_as_you_go, users=[u0, u1, u2], count=1)
+    reactions = utils.create_reactions_for_tests(commit_as_you_go, u0, goals, count=1)
 
     api.create_follow(commit_as_you_go, domain.Follow(follower_id=u1.id, leader_id=u0.id))
     api.create_follow(commit_as_you_go, domain.Follow(follower_id=u2.id, leader_id=u0.id))
@@ -126,6 +127,7 @@ def test_generate_timeline_of_leaders(commit_as_you_go):
     commit_as_you_go.commit()
     timeline = api.generate_timeline_of_leaders(commit_as_you_go, u0.id)
     assert len(timeline) == 1
+    assert all([len(p.reactions) == 1 for p in timeline])
 
     timeline2 = api.generate_timeline_of_leaders(commit_as_you_go, u1.id)
     assert len(timeline2) == 2
