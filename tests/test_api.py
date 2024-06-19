@@ -27,7 +27,7 @@ def test_search_users(commit_as_you_go):
     assert s_u2.leader == False
 
 
-from tests.insert_fixtures import insert_data
+from insert_fixtures import insert_data
 
 def test_search_users_with_unknown_edge_case(commit_as_you_go):
     s_users = insert_data()
