@@ -163,3 +163,11 @@ def post_comment(comment: requests.NewComment) -> domain.Comment:
     with engine.begin() as conn:
         s_comment = api.create_comment(conn, domain.Comment(**comment.model_dump()))
     return s_comment
+
+@router.get("/comments")
+def get_comments(user_id: UUID | None = None, goal_id: UUID | None = None, task_id: UUID | None = None) -> list[domain.Comment]:    
+    logging.debug(f"Getting comments for user: {user_id}, goal: {goal_id}, or task: {task_id}")
+    with engine.begin() as conn:
+        comments = api.read_comments(conn, user_id=user_id, goal_id=goal_id, task_id=task_id)
+    logging.debug(f"Comments: {comments}")
+    return comments

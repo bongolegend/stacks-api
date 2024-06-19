@@ -53,7 +53,7 @@ class Post(BaseModel):
     user: User
     primary: GoalEnriched | TaskEnriched
     reactions: list[Reaction] = []
-    comments: list[Comment] = []
+    comments_count: int = 0
     secondary: GoalEnriched | None = None
     sort_on: datetime
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

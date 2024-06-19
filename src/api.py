@@ -179,8 +179,18 @@ def create_comment(conn: Connection, comment: domain.Comment) -> domain.Comment:
     inserted = conn.execute(stmt).fetchone()
     return domain.Comment(**inserted._mapping)
 
-def read_comments(conn: Connection, user_id: UUID) -> list[domain.Comment]:
-    stmt = select(tables.comments).where(tables.comments.c.user_id == user_id)
+def read_comments(conn: Connection, user_id: UUID = None, goal_id: UUID = None, task_id: UUID = None) -> list[domain.Comment]:
+    # only one of user_id, goal_id, or task_id should be provided
+    if [user_id, goal_id, task_id].count(None) != 2:
+        raise ValueError("You must pass exactly one of user_id, goal_id or task_id")
+    if user_id:
+        filter = tables.comments.c.user_id == user_id
+    elif goal_id:
+        filter = tables.comments.c.goal_id == goal_id
+    elif task_id:
+        filter = tables.comments.c.task_id == task_id
+    
+    stmt = select(tables.comments).where(filter)
     result = conn.execute(stmt).all()
     comments = [domain.Comment(**row._mapping) for row in result]
     return comments
@@ -229,7 +239,7 @@ def _generate_timeline_of_leaders(conn: Connection, table: Table, follower_id: U
             user=utils.filter_by_prefix(row, U_),
             primary={**row._mapping, "table": table.name},
             reactions=reactions.get(row.id, []),
-            comments=comments.get(row.id, []),
+            comments_count=len(comments.get(row.id, [])),
             sort_on=row.sort_on
         )
         for row in primary_result
