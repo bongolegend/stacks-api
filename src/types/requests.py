@@ -1,4 +1,4 @@
-# The types.requests should only be used to validate requests in FastAPI
+from datetime import datetime
 from uuid import UUID
 from pydantic import BaseModel, EmailStr, field_validator, Field, model_validator
 
@@ -24,7 +24,9 @@ class NewUser(BaseModel):
 
 class NewGoal(BaseModel):
     user_id: UUID
-    description: str = Field(..., min_length=1, max_length=280)
+    title: str = Field(..., min_length=1, max_length=100)
+    description: str = Field(..., min_length=1, max_length=1000)
+    due_date: datetime | None = None
     is_completed: bool = False
 
     @field_validator('user_id', mode="before")
@@ -33,7 +35,9 @@ class NewGoal(BaseModel):
         return validate_uuid(value)
 
 class UpdateGoal(BaseModel):
-    description: str | None = Field(None, min_length=1, max_length=280)
+    title: str | None = Field(None, min_length=1, max_length=100)
+    description: str | None = Field(None, min_length=1, max_length=1000)
+    due_date: datetime | None = None
     is_completed: bool | None = None
 
 class NewTask(BaseModel):

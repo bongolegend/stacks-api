@@ -1,3 +1,6 @@
+from datetime import datetime
+from pytz import utc
+
 from sqlalchemy import MetaData, delete, insert
 from sqlalchemy.engine import Connection
 
@@ -30,7 +33,8 @@ def create_goals_for_tests(conn: Connection, users: list[domain.User], count = 2
     goals = []
     for u in users:
         for i in range(count):
-            goals.append(domain.Goal(user_id=u.id, description="goal-description").model_dump(exclude_none=True))
+            goals.append(domain.Goal(
+                user_id=u.id, title="title", description="goal-description", due_date=datetime.now(utc)).model_dump(exclude_none=True))
     inserted = conn.execute(insert(tables.goals).values(goals).returning(tables.goals)).all()
     conn.commit()
     inserted = [domain.Goal(**row._mapping) for row in inserted]
@@ -71,4 +75,15 @@ def create_comments_for_tests(conn: Connection, user: domain.User, goals: list[d
     inserted = conn.execute(insert(tables.comments).values(comments).returning(tables.comments)).all()
     conn.commit()
     inserted = [domain.Comment(**row._mapping) for row in inserted]
+    return inserted
+
+def create_follows_for_tests(conn: Connection, users: list[domain.User]) -> list[domain.Follow]:
+    follows = []
+    for u1 in users:
+        for u2 in users:
+            if u1.id != u2.id:
+                follows.append(domain.Follow(follower_id=u1.id, leader_id=u2.id).model_dump(exclude_none=True))
+    inserted = conn.execute(insert(tables.follows).values(follows).returning(tables.follows)).all()
+    conn.commit()
+    inserted = [domain.Follow(**row._mapping) for row in inserted]
     return inserted

@@ -1,7 +1,7 @@
 from src import api
 from src.types import domain, requests
 from tests import utils
-
+from insert_fixtures import insert_data
 
 def test_create_read_delete_user(commit_as_you_go):
     db_user = api.create_user(commit_as_you_go, domain.User(username='user1', email='u1@a.b'))
@@ -26,8 +26,6 @@ def test_search_users(commit_as_you_go):
     assert s_u1.leader == True
     assert s_u2.leader == False
 
-
-from insert_fixtures import insert_data
 
 def test_search_users_with_unknown_edge_case(commit_as_you_go):
     s_users = insert_data()
@@ -58,7 +56,7 @@ def test_create_delete_follow(commit_as_you_go):
 
 def test_create_read_update_delete_goal(commit_as_you_go):
     u0 = utils.create_users_for_tests(commit_as_you_go, count=1)[0]
-    goal = domain.Goal(user_id=u0.id, description="goal-description")
+    goal = domain.Goal(user_id=u0.id, title="title", description="goal-description")
     db_goal = api.create_goal(commit_as_you_go, goal)
     commit_as_you_go.commit()
 
