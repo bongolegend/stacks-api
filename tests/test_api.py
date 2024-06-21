@@ -1,7 +1,7 @@
 from src import api
 from src.types import domain, requests
 from tests import utils
-from insert_fixtures import insert_data
+
 
 def test_create_read_delete_user(commit_as_you_go):
     db_user = api.create_user(commit_as_you_go, domain.User(username='user1', email='u1@a.b'))
@@ -28,7 +28,7 @@ def test_search_users(commit_as_you_go):
 
 
 def test_search_users_with_unknown_edge_case(commit_as_you_go):
-    s_users = insert_data()
+    s_users = utils.create_users_for_tests(commit_as_you_go, count=3)
     u0 = s_users[0]
 
     searched_users = api.search_users(commit_as_you_go, u0.id)
