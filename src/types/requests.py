@@ -26,7 +26,7 @@ class NewGoal(BaseModel):
     user_id: UUID
     title: str = Field(..., min_length=1, max_length=100)
     description: str = Field(..., min_length=1, max_length=1000)
-    due_date: datetime | None = None
+    due_date: datetime
     is_completed: bool = False
 
     @field_validator('user_id', mode="before")

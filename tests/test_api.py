@@ -56,7 +56,7 @@ def test_create_delete_follow(commit_as_you_go):
 
 def test_create_read_update_delete_goal(commit_as_you_go):
     u0 = utils.create_users_for_tests(commit_as_you_go, count=1)[0]
-    goal = domain.Goal(user_id=u0.id, title="title", description="goal-description")
+    goal = domain.Goal(user_id=u0.id, title="title", description="goal-description", due_date="2022-01-01")
     db_goal = api.create_goal(commit_as_you_go, goal)
     commit_as_you_go.commit()
 

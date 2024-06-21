@@ -27,7 +27,7 @@ goals = Table(
     Column('user_id', UUID(as_uuid=True), ForeignKey('users.id', ondelete="CASCADE"), nullable=False),
     Column('title', String, nullable=False),
     Column('description', Text, nullable=False),
-    Column('due_date', DateTime(timezone=True), nullable=True),
+    Column('due_date', DateTime(timezone=True), nullable=False),
     Column('is_completed', Boolean, default=False),
     Column('created_at', DateTime(timezone=True), server_default=func.now()),
     Column('updated_at', DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
