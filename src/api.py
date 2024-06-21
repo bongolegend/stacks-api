@@ -209,42 +209,47 @@ def delete_comment(conn: Connection, comment_id: UUID) -> None:
 
 ### TIMELINE
 
+
 def generate_timeline_of_leaders(conn: Connection, follower_id: UUID, count: int = 20) -> list[domain.Post]:  
     """This also includes the posts of the follower_id"""
-    goals = _generate_timeline_of_leaders(conn, tables.goals, follower_id, count)
-    tasks = _generate_timeline_of_leaders(conn, tables.tasks, follower_id, count)
+    goals = _generate_goal_posts(conn, follower_id, count)
+    tasks = _generate_task_posts(conn, follower_id, count)
     posts = sorted(goals + tasks, key=lambda post: post.sort_on, reverse=True)
     return posts
 
 
-def _generate_timeline_of_leaders(conn: Connection, table: Table, follower_id: UUID, count: int = 20) -> list[domain.Post]:
-    """table must be either `goals` or `tasks`"""
-    U_ = "u_"
-
-    base_query = (select(*utils.prefix(tables.users, U_),
-                  table,
-                  table.c.created_at.label("sort_on"))
-                  .select_from(tables.users)
-                  .join(table))
+def _generate_task_posts(conn: Connection, follower_id: UUID, count: int = 20) -> list[domain.Post]:
+    base_query = (select(
+                    tables.tasks.c.id,
+                    *utils.prefix(tables.users, "u_"),
+                    *utils.prefix(tables.goals, "g_"),
+                    *utils.prefix(tables.tasks, "t_"),
+                    tables.tasks.c.updated_at.label("sort_on"))
+                  .select_from(tables.tasks)
+                  .join(tables.users)
+                  .join(tables.goals, tables.tasks.c.goal_id == tables.goals.c.id)
+                  .where(tables.tasks.c.is_completed == True))
     
     leaders_query = (base_query
                         .join(tables.follows, tables.users.c.id == tables.follows.c.leader_id)
                         .where(tables.follows.c.follower_id == follower_id))
     
     self_query = (base_query
-                    .where(table.c.user_id == follower_id))
+                    .where(tables.tasks.c.user_id == follower_id))
 
     union_query = union(leaders_query, self_query).order_by(desc("sort_on")).limit(count)
 
     primary_result = conn.execute(union_query).all()
 
-    reactions = _read_reactions_or_comments(conn, table, primary_result, tables.reactions, domain.Reaction)
-    comments = _read_reactions_or_comments(conn, table, primary_result, tables.comments, domain.Comment)
+    reactions = _read_reactions_or_comments(conn, tables.tasks, primary_result, tables.reactions, domain.Reaction)
+    comments = _read_reactions_or_comments(conn, tables.tasks, primary_result, tables.comments, domain.Comment)
 
     posts = [
         domain.Post(
-            user=utils.filter_by_prefix(row, U_),
-            primary={**row._mapping, "table": table.name},
+            id=row.id,
+            user=utils.filter_by_prefix(row, "u_"),
+            goal=utils.filter_by_prefix(row, "g_"),
+            task=utils.filter_by_prefix(row, "t_"),
             reactions=reactions.get(row.id, []),
             comments_count=len(comments.get(row.id, [])),
             sort_on=row.sort_on
@@ -252,6 +257,45 @@ def _generate_timeline_of_leaders(conn: Connection, table: Table, follower_id: U
         for row in primary_result
     ]
     return posts
+
+
+def _generate_goal_posts(conn: Connection, follower_id: UUID, count: int = 20) -> list[domain.Post]:
+    base_query = (select(
+                    tables.goals.c.id,
+                    *utils.prefix(tables.users, "u_"),
+                    *utils.prefix(tables.goals, "g_"),
+                    tables.goals.c.updated_at.label("sort_on"))
+                  .select_from(tables.users)
+                  .join(tables.goals))
+    
+    leaders_query = (base_query
+                        .join(tables.follows, tables.users.c.id == tables.follows.c.leader_id)
+                        .where(tables.follows.c.follower_id == follower_id))
+    
+    self_query = (base_query
+                    .where(tables.goals.c.user_id == follower_id))
+
+    union_query = union(leaders_query, self_query).order_by(desc("sort_on")).limit(count)
+
+    primary_result = conn.execute(union_query).all()
+
+    reactions = _read_reactions_or_comments(conn, tables.goals, primary_result, tables.reactions, domain.Reaction)
+    comments = _read_reactions_or_comments(conn, tables.goals, primary_result, tables.comments, domain.Comment)
+
+    posts = [
+        domain.Post(
+            id=row.id,
+            user=utils.filter_by_prefix(row, "u_"),
+            goal=utils.filter_by_prefix(row, "g_"),
+            reactions=reactions.get(row.id, []),
+            comments_count=len(comments.get(row.id, [])),
+            sort_on=row.sort_on
+        )
+        for row in primary_result
+    ]
+    return posts
+
+
 
 
 def _read_reactions_or_comments(

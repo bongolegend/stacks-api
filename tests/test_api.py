@@ -130,7 +130,7 @@ def test_create_read_delete_comment(commit_as_you_go):
 
     assert api.read_comments(commit_as_you_go, u0.id) == []
 
-def test_generate_timeline_of_leaders(commit_as_you_go):
+def test_generate_goal_posts(commit_as_you_go):
     u0, u1, u2 = utils.create_users_for_tests(commit_as_you_go, count=3)
     goals = utils.create_goals_for_tests(commit_as_you_go, users=[u0, u1, u2], count=1)
     reactions = utils.create_reactions_for_tests(commit_as_you_go, u0, goals, count=1)
@@ -140,10 +140,54 @@ def test_generate_timeline_of_leaders(commit_as_you_go):
     api.create_follow(commit_as_you_go, domain.Follow(follower_id=u2.id, leader_id=u0.id))
 
     commit_as_you_go.commit()
-    timeline = api.generate_timeline_of_leaders(commit_as_you_go, u0.id)
+    timeline = api._generate_goal_posts(commit_as_you_go, u0.id)
     assert len(timeline) == 1
     assert all([len(p.reactions) == 1 for p in timeline])
     assert all([p.comments_count == 1 for p in timeline])
 
-    timeline2 = api.generate_timeline_of_leaders(commit_as_you_go, u1.id)
+    timeline2 = api._generate_goal_posts(commit_as_you_go, u1.id)
     assert len(timeline2) == 2
+
+
+def test_generate_task_posts(commit_as_you_go):
+    u0, u1, u2 = utils.create_users_for_tests(commit_as_you_go, count=3)
+    goals = utils.create_goals_for_tests(commit_as_you_go, users=[u0, u1, u2], count=1)
+    tasks = utils.create_tasks_for_tests(commit_as_you_go, goals, count=1)
+    reactions = utils.create_reactions_for_tests(commit_as_you_go, u0, tasks, count=1)
+    comments = utils.create_comments_for_tests(commit_as_you_go, u0, tasks, count=1)
+
+    api.create_follow(commit_as_you_go, domain.Follow(follower_id=u1.id, leader_id=u0.id))
+    api.create_follow(commit_as_you_go, domain.Follow(follower_id=u2.id, leader_id=u0.id))
+
+    commit_as_you_go.commit()
+    timeline = api._generate_task_posts(commit_as_you_go, u0.id)
+    assert len(timeline) == 1
+    assert all([len(p.reactions) == 1 for p in timeline])
+    assert all([p.comments_count == 1 for p in timeline])
+
+    timeline2 = api._generate_task_posts(commit_as_you_go, u1.id)
+    assert len(timeline2) == 2
+
+
+def test_generate_timeline(commit_as_you_go):
+    u0, u1, u2 = utils.create_users_for_tests(commit_as_you_go, count=3)
+    goals = utils.create_goals_for_tests(commit_as_you_go, users=[u0, u1, u2], count=1)
+    tasks = utils.create_tasks_for_tests(commit_as_you_go, goals, count=1)
+
+    _ = utils.create_reactions_for_tests(commit_as_you_go, u0, tasks, count=1)
+    _ = utils.create_reactions_for_tests(commit_as_you_go, u0, goals, count=1)
+
+    _ = utils.create_comments_for_tests(commit_as_you_go, u0, goals, count=1)
+    _ = utils.create_comments_for_tests(commit_as_you_go, u0, tasks, count=1)
+
+    api.create_follow(commit_as_you_go, domain.Follow(follower_id=u1.id, leader_id=u0.id))
+    api.create_follow(commit_as_you_go, domain.Follow(follower_id=u2.id, leader_id=u0.id))
+
+    commit_as_you_go.commit()
+    timeline = api.generate_timeline_of_leaders(commit_as_you_go, u0.id)
+    assert len(timeline) == 2
+    assert all([len(p.reactions) == 1 for p in timeline])
+    assert all([p.comments_count == 1 for p in timeline])
+
+    timeline2 = api.generate_timeline_of_leaders(commit_as_you_go, u1.id)
+    assert len(timeline2) == 4

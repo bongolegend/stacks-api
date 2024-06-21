@@ -28,12 +28,6 @@ class UserEnriched(User):
 class Goal(CustomBase, requests.NewGoal):
     pass
 
-class GoalEnriched(Goal):
-    table: str
-
-class TaskEnriched(requests.NewTask):
-    table: str
-
 class Task(CustomBase, requests.NewTask):
     pass
 
@@ -53,11 +47,11 @@ class CommentEnriched(Comment):
 
 class Post(BaseModel):
     """A Post is an entity in a timeline. It is a way to share goals and tasks"""
-    id: UUID = Field(default_factory=lambda: ULID().to_uuid4())
+    id: UUID
     user: User
-    primary: GoalEnriched | TaskEnriched
+    goal: Goal
+    task: Task | None = None
     reactions: list[Reaction] = []
     comments_count: int = 0
-    secondary: GoalEnriched | None = None
     sort_on: datetime
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

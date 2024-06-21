@@ -42,7 +42,7 @@ def create_goals_for_tests(conn: Connection, users: list[domain.User], count = 2
 
 def create_tasks_for_tests(conn: Connection, goals: list[domain.Goal], count = 2) -> list[domain.Task]:
     tasks = [
-        domain.Task(user_id=g.user_id, goal_id=g.id, description="task-desc").model_dump(exclude_none=True) 
+        domain.Task(user_id=g.user_id, goal_id=g.id, description="task-desc", is_completed=True).model_dump(exclude_none=True) 
         for _ in range(count) 
         for g in goals]
     inserted = conn.execute(insert(tables.tasks).values(tasks).returning(tables.tasks)).all()
@@ -51,11 +51,18 @@ def create_tasks_for_tests(conn: Connection, goals: list[domain.Goal], count = 2
     return inserted
 
 
-def create_reactions_for_tests(conn: Connection, user: domain.User, goals: list[domain.Goal], count = 2) -> list[domain.Reaction]:
+def create_reactions_for_tests(
+        conn: Connection, user: domain.User, 
+        values: list[domain.Goal | domain.Task], 
+        count = 2) -> list[domain.Reaction]:
     reactions = []
-    for g in goals:
+    key = 'task_id'
+    if isinstance(values[0], domain.Goal):
+        key = 'goal_id'
+
+    for v in values:
         for i in range(count):
-            reactions.append(domain.Reaction(user_id=user.id, goal_id=g.id, reaction={
+            reactions.append(domain.Reaction(**{key: v.id}, user_id=user.id, reaction={
                 'name': 'beaming face with smiling eyes', 
                 'emoji': '😁', 
                 'unicode_version': '0.6', 
@@ -67,11 +74,17 @@ def create_reactions_for_tests(conn: Connection, user: domain.User, goals: list[
     inserted = [domain.Reaction(**row._mapping) for row in inserted]
     return inserted
 
-def create_comments_for_tests(conn: Connection, user: domain.User, goals: list[domain.Goal], count = 2) -> list[domain.Comment]:
+def create_comments_for_tests(
+        conn: Connection, user: domain.User, 
+        values: list[domain.Goal | domain.Task], 
+        count = 2) -> list[domain.Comment]:
+    key = 'task_id'
+    if isinstance(values[0], domain.Goal):
+        key = 'goal_id'
     comments = []
-    for g in goals:
+    for v in values:
         for i in range(count):
-            comments.append(domain.Comment(user_id=user.id, goal_id=g.id, comment="comment").model_dump(exclude_none=True))
+            comments.append(domain.Comment(**{key: v.id}, user_id=user.id, comment="comment").model_dump(exclude_none=True))
     inserted = conn.execute(insert(tables.comments).values(comments).returning(tables.comments)).all()
     conn.commit()
     inserted = [domain.Comment(**row._mapping) for row in inserted]
