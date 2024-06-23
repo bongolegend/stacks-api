@@ -23,7 +23,8 @@ class User(CustomBase, requests.NewUser):
     pass
 
 class UserEnriched(User):
-    leader: bool = False
+    leader: bool | None = None
+    follower: bool | None = None
 
 class Goal(CustomBase, requests.NewGoal):
     pass
@@ -35,6 +36,9 @@ class Follow(requests.NewFollow):
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
+class FollowCounts(BaseModel):
+    followers: int = 0
+    leaders: int = 0
 class Reaction(CustomBase, requests.NewReaction):
     pass
 

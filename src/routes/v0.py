@@ -52,6 +52,23 @@ def delete_user(user_id: UUID):
         api.delete_user(conn, user_id)
 
 
+@router.get("/users/leaders/{user_id}")
+def get_leaders(user_id: UUID) -> list[domain.UserEnriched]:
+    logging.debug(f"Getting leaders for user: {user_id}")
+    with engine.begin() as conn:
+        leaders = api.read_leaders(conn, user_id)
+    logging.debug(f"Leaders: {leaders}")
+    return leaders
+
+
+@router.get("/users/followers/{user_id}")
+def get_followers(user_id: UUID) -> list[domain.UserEnriched]:
+    logging.debug(f"Getting followers for user: {user_id}")
+    with engine.begin() as conn:
+        followers = api.read_followers(conn, user_id)
+    logging.debug(f"Followers: {followers}")
+    return followers
+
 ### FOLLOW
 
 @router.post("/follows")
@@ -68,6 +85,13 @@ def delete_follow(follower_id: UUID, leader_id: UUID):
     with engine.begin() as conn:
         api.delete_follow(conn, domain.Follow(follower_id=follower_id, leader_id=leader_id))
 
+@router.get("/follows/counts/{user_id}")
+def get_follow_counts(user_id: UUID) -> domain.FollowCounts:
+    logging.debug(f"Getting follow counts for user: {user_id}")
+    with engine.begin() as conn:
+        counts = api.read_follow_counts(conn, user_id)
+    logging.debug(f"Follow counts: {counts}")
+    return counts
 
 ### GOAL
 

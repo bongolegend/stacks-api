@@ -39,11 +39,14 @@ def test_read_followers_and_leaders(commit_as_you_go):
     u0, u1, u2 = utils.create_users_for_tests(commit_as_you_go, count=3)
     api.create_follow(commit_as_you_go, domain.Follow(follower_id=u1.id, leader_id=u0.id))
     api.create_follow(commit_as_you_go, domain.Follow(follower_id=u2.id, leader_id=u0.id))
+    api.create_follow(commit_as_you_go, domain.Follow(follower_id=u0.id, leader_id=u1.id))
+    api.create_follow(commit_as_you_go, domain.Follow(follower_id=u1.id, leader_id=u2.id))
     commit_as_you_go.commit()
 
-    assert api.read_leaders(commit_as_you_go, u1.id) == [u0]
-    assert api.read_leaders(commit_as_you_go, u0.id) == []
-    assert api.read_followers(commit_as_you_go, u0.id) == [u1, u2]
+    assert {l.id for l in api.read_leaders(commit_as_you_go, u1.id)} == {u0.id, u2.id}
+    assert {l.id for l in api.read_leaders(commit_as_you_go, u0.id)} == {u1.id}
+    assert {f.id for f in api.read_followers(commit_as_you_go, u0.id)} == {u1.id, u2.id}
+    # assert api.read_followers(commit_as_you_go, u0.id) == [u1, u2]
 
 def test_create_delete_follow(commit_as_you_go):
     u0, u1 = utils.create_users_for_tests(commit_as_you_go)
@@ -191,3 +194,17 @@ def test_generate_timeline(commit_as_you_go):
 
     timeline2 = api.generate_timeline_of_leaders(commit_as_you_go, u1.id)
     assert len(timeline2) == 4
+
+def test_follow_counts(commit_as_you_go):
+    u0, u1, u2 = utils.create_users_for_tests(commit_as_you_go, count=3)
+    api.create_follow(commit_as_you_go, domain.Follow(follower_id=u1.id, leader_id=u0.id))
+    api.create_follow(commit_as_you_go, domain.Follow(follower_id=u2.id, leader_id=u0.id))
+    commit_as_you_go.commit()
+
+    follow_counts = api.read_follow_counts(commit_as_you_go, u0.id)
+    assert follow_counts.followers == 2
+    assert follow_counts.leaders == 0
+
+    follow_counts = api.read_follow_counts(commit_as_you_go, u1.id)
+    assert follow_counts.followers == 0
+    assert follow_counts.leaders == 1

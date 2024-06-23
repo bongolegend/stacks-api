@@ -1,7 +1,7 @@
 from collections import defaultdict
 from uuid import UUID
 
-from sqlalchemy import select, insert, delete, and_, or_, desc, update, case, union, Table, Row
+from sqlalchemy import select, insert, delete, and_, or_, desc, update, case, union, Table, Row, func, literal
 from sqlalchemy.engine import Connection
 
 from src.sqlalchemy import tables, utils
@@ -51,22 +51,32 @@ def search_users(conn: Connection, user_id: UUID) -> list[domain.UserEnriched]:
     users = [domain.UserEnriched(**row._mapping) for row in result]
     return users
 
-def read_followers(conn: Connection, leader_id: UUID) -> list[domain.User]:
-    stmt = select(tables.users) \
-        .select_from(tables.users) \
-        .join(tables.follows, tables.users.c.id == tables.follows.c.follower_id) \
-        .where(tables.follows.c.leader_id == leader_id)
-    result = conn.execute(stmt).all()
-    followers = [domain.User(**row._mapping) for row in result]
-    return followers
+def read_followers(conn: Connection, leader_id: UUID) -> list[domain.UserEnriched]:
+    '''find all of the followers, and determine if they are also a leader'''
+    f0 = tables.follows.alias('f0')
+    f1 = tables.follows.alias('f1')
+    stmt = (
+        select(tables.users,
+               literal(True).label('follower'),
+               case((f1.c.leader_id == None, False),
+                    else_=True).label('leader'))
+        .select_from(tables.users)
+        .join(f0, f0.c.follower_id == tables.users.c.id)
+        .outerjoin(f1, (f1.c.leader_id == tables.users.c.id) & (f1.c.follower_id == leader_id))
+        .where(f0.c.leader_id == leader_id))
 
-def read_leaders(conn: Connection, follower_id: UUID) -> list[domain.User]:
+    result = conn.execute(stmt).all()
+    users = [domain.UserEnriched(**row._mapping) for row in result]
+    return users
+
+
+def read_leaders(conn: Connection, follower_id: UUID) -> list[domain.UserEnriched]:
     stmt = select(tables.users) \
         .select_from(tables.users) \
         .join(tables.follows, tables.users.c.id == tables.follows.c.leader_id) \
         .where(tables.follows.c.follower_id == follower_id)
     result = conn.execute(stmt).all()
-    leaders = [domain.User(**row._mapping) for row in result]
+    leaders = [domain.UserEnriched(leader=True, **row._mapping) for row in result]
     return leaders
 
 def delete_user(conn: Connection, user_id: UUID) -> None:
@@ -87,6 +97,21 @@ def delete_follow(conn: Connection, follow: domain.Follow) -> None:
         and_(tables.follows.c.follower_id == follow.follower_id,
              tables.follows.c.leader_id == follow.leader_id))
     conn.execute(stmt)
+
+def read_follow_counts(conn: Connection, user_id: UUID) -> domain.FollowCounts:
+    stmt = (
+        select(
+            case((tables.follows.c.follower_id == user_id, "leaders"),
+                 else_="followers").label("type"),
+            func.count().label("count")
+        )
+        .select_from(tables.follows)
+        .where(or_(tables.follows.c.leader_id == user_id,
+                   tables.follows.c.follower_id == user_id))
+        .group_by("type"))
+    result = conn.execute(stmt).all()
+    
+    return domain.FollowCounts(**{row.type: row.count for row in result})
 
 ### GOAL
 
