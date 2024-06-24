@@ -25,9 +25,10 @@ goals = Table(
     'goals', metadata,
     Column('id', UUID(as_uuid=True), primary_key=True, server_default=text("uuid_generate_v4()")),
     Column('user_id', UUID(as_uuid=True), ForeignKey('users.id', ondelete="CASCADE"), nullable=False),
-    Column('title', String, nullable=False),
+    Column('parent_id', UUID(as_uuid=True), ForeignKey('goals.id', ondelete="CASCADE"), nullable=True),
+    Column('title', String, nullable=True),
     Column('description', Text, nullable=False),
-    Column('due_date', DateTime(timezone=True), nullable=False),
+    Column('due_date', DateTime(timezone=True), nullable=True),
     Column('is_completed', Boolean, default=False),
     Column('created_at', DateTime(timezone=True), server_default=func.now()),
     Column('updated_at', DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
