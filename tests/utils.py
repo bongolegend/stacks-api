@@ -40,6 +40,20 @@ def create_goals_for_tests(conn: Connection, users: list[domain.User], count = 2
     inserted = [domain.Goal(**row._mapping) for row in inserted]
     return inserted
 
+
+def create_subgoals_for_tests(conn: Connection, goals: list[domain.Goal], count = 2) -> list[domain.Goal]:
+    subgoals = []
+    for g in goals:
+        for i in range(count):
+            subgoals.append(domain.Goal(
+                user_id=g.user_id, parent_id=g.id, description="subgoal-description").model_dump(exclude_none=True))
+    inserted = conn.execute(insert(tables.goals).values(subgoals).returning(tables.goals)).all()
+    conn.commit()
+    inserted = [domain.Goal(**row._mapping) for row in inserted]
+    return inserted
+
+
+
 def create_tasks_for_tests(conn: Connection, goals: list[domain.Goal], count = 2) -> list[domain.Task]:
     tasks = [
         domain.Task(user_id=g.user_id, goal_id=g.id, description="task-desc", is_completed=True).model_dump(exclude_none=True) 

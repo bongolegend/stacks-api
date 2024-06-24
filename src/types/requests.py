@@ -24,12 +24,13 @@ class NewUser(BaseModel):
 
 class NewGoal(BaseModel):
     user_id: UUID
-    title: str = Field(..., min_length=1, max_length=100)
     description: str = Field(..., min_length=1, max_length=1000)
-    due_date: datetime
+    parent_id: UUID | None = None
+    title: str | None = Field(default=None, min_length=1, max_length=100)
+    due_date: datetime | None = None
     is_completed: bool = False
 
-    @field_validator('user_id', mode="before")
+    @field_validator('user_id', 'parent_id', mode="before")
     @classmethod
     def validate_id(cls, value):
         return validate_uuid(value)

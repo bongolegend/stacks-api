@@ -112,6 +112,14 @@ def get_goals(user_id: UUID) -> list[domain.Goal]:
     return goals
 
 
+@router.get("/goals/subgoals")
+def get_subgoals(user_id: UUID = None, goal_id: UUID = None) -> list[domain.Goal]:
+    logging.debug(f"Getting subgoals for user: {user_id} or goal: {goal_id}")
+    with engine.begin() as conn:
+        goals = api.read_subgoals(conn, user_id=user_id, goal_id=goal_id)
+    logging.debug(f"Subgoals: {goals}")
+    return goals
+
 @router.patch("/goals/{goal_id}")
 def patch_goal(goal_id: UUID, updates: requests.UpdateGoal) -> domain.Goal:
     logging.debug(f"Updating goal: {goal_id} with {updates}")
@@ -136,13 +144,13 @@ def post_task(task: requests.NewTask) -> domain.Task:
     return s_task
 
 
-@router.get("/tasks")
-def get_tasks(user_id: UUID | None = None, goal_id: UUID | None = None) -> list[domain.Task]:
-    logging.debug(f"Getting tasks for user: {user_id} and goal: {goal_id}")
-    with engine.begin() as conn:
-        tasks = api.read_tasks(conn, user_id=user_id, goal_id=goal_id)
-    logging.debug(f"Tasks: {tasks}")
-    return tasks
+# @router.get("/tasks")
+# def get_tasks(user_id: UUID | None = None, goal_id: UUID | None = None) -> list[domain.Task]:
+#     logging.debug(f"Getting tasks for user: {user_id} and goal: {goal_id}")
+#     with engine.begin() as conn:
+#         tasks = api.read_tasks(conn, user_id=user_id, goal_id=goal_id)
+#     logging.debug(f"Tasks: {tasks}")
+#     return tasks
 
 @router.patch("/tasks/{task_id}")
 def patch_task(task_id: UUID, updates: requests.UpdateTask) -> domain.Task:

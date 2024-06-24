@@ -54,7 +54,7 @@ class Post(BaseModel):
     id: UUID
     user: User
     goal: Goal
-    task: Task | None = None
+    parent: Goal | None = None
     reactions: list[Reaction] = []
     comments_count: int = 0
     sort_on: datetime

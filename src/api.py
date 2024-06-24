@@ -121,7 +121,21 @@ def create_goal(conn: Connection, goal: domain.Goal) -> domain.Goal:
     return domain.Goal(**inserted._mapping)
 
 def read_goals(conn: Connection, user_id: UUID) -> list[domain.Goal]:
-    stmt = select(tables.goals).where(tables.goals.c.user_id == user_id)
+    stmt = (select(tables.goals)
+            .where(tables.goals.c.user_id == user_id)
+            .where(tables.goals.c.parent_id == None))
+    result = conn.execute(stmt).all()
+    goals = [domain.Goal(**row._mapping) for row in result]
+    return goals
+
+def read_subgoals(conn: Connection, parent_id: UUID = None, user_id: UUID = None) -> list[domain.Goal]:
+    if [parent_id, user_id].count(None) != 1:
+        raise ValueError("You must pass exactly one of parent_id or user_id")
+    if parent_id:
+        filter = tables.goals.c.parent_id == parent_id
+    elif user_id:
+        filter = tables.goals.c.user_id == user_id
+    stmt = select(tables.goals).where(filter).where(tables.goals.c.parent_id != None)
     result = conn.execute(stmt).all()
     goals = [domain.Goal(**row._mapping) for row in result]
     return goals
@@ -237,9 +251,9 @@ def delete_comment(conn: Connection, comment_id: UUID) -> None:
 
 def generate_timeline_of_leaders(conn: Connection, follower_id: UUID, count: int = 20) -> list[domain.Post]:  
     """This also includes the posts of the follower_id"""
-    goals = _generate_goal_posts(conn, follower_id, count)
-    tasks = _generate_task_posts(conn, follower_id, count)
-    posts = sorted(goals + tasks, key=lambda post: post.sort_on, reverse=True)
+    posts = _generate_goal_posts(conn, follower_id, count)
+    # tasks = _generate_task_posts(conn, follower_id, count)
+    # posts = sorted(goals + tasks, key=lambda post: post.sort_on, reverse=True)
     return posts
 
 
@@ -285,39 +299,49 @@ def _generate_task_posts(conn: Connection, follower_id: UUID, count: int = 20) -
 
 
 def _generate_goal_posts(conn: Connection, follower_id: UUID, count: int = 20) -> list[domain.Post]:
+    primary = tables.goals.alias('primary')
+    parent = tables.goals.alias('parent')
+
     base_query = (select(
-                    tables.goals.c.id,
+                    primary.c.id,
+                    *utils.prefix(primary, "primary_"),
+                    *utils.prefix(parent, "parent_"),
                     *utils.prefix(tables.users, "u_"),
-                    *utils.prefix(tables.goals, "g_"),
-                    tables.goals.c.updated_at.label("sort_on"))
-                  .select_from(tables.users)
-                  .join(tables.goals))
+                    primary.c.updated_at.label("sort_on"))
+                  .select_from(primary)
+                  .join(tables.users)
+                  .outerjoin(parent, primary.c.parent_id == parent.c.id))
     
     leaders_query = (base_query
                         .join(tables.follows, tables.users.c.id == tables.follows.c.leader_id)
                         .where(tables.follows.c.follower_id == follower_id))
     
     self_query = (base_query
-                    .where(tables.goals.c.user_id == follower_id))
+                    .where(primary.c.user_id == follower_id))
 
     union_query = union(leaders_query, self_query).order_by(desc("sort_on")).limit(count)
 
-    primary_result = conn.execute(union_query).all()
+    result = conn.execute(union_query).all()
 
-    reactions = _read_reactions_or_comments(conn, tables.goals, primary_result, tables.reactions, domain.Reaction)
-    comments = _read_reactions_or_comments(conn, tables.goals, primary_result, tables.comments, domain.Comment)
+    reactions = _read_reactions_or_comments(conn, tables.goals, result, tables.reactions, domain.Reaction)
+    comments = _read_reactions_or_comments(conn, tables.goals, result, tables.comments, domain.Comment)
 
-    posts = [
-        domain.Post(
+    posts = []
+    for row in result:
+        if row.primary_parent_id is None:
+            parent = None
+        else:
+            parent = domain.Goal(**utils.filter_by_prefix(row, "parent_"))
+        posts.append(domain.Post(
             id=row.id,
             user=utils.filter_by_prefix(row, "u_"),
-            goal=utils.filter_by_prefix(row, "g_"),
+            goal=utils.filter_by_prefix(row, "primary_"),
+            parent=parent,
             reactions=reactions.get(row.id, []),
             comments_count=len(comments.get(row.id, [])),
             sort_on=row.sort_on
-        )
-        for row in primary_result
-    ]
+        ))
+
     return posts
 
 
