@@ -122,20 +122,7 @@ def create_goal(conn: Connection, goal: domain.Goal) -> domain.Goal:
 
 def read_goals(conn: Connection, user_id: UUID) -> list[domain.Goal]:
     stmt = (select(tables.goals)
-            .where(tables.goals.c.user_id == user_id)
-            .where(tables.goals.c.parent_id == None))
-    result = conn.execute(stmt).all()
-    goals = [domain.Goal(**row._mapping) for row in result]
-    return goals
-
-def read_subgoals(conn: Connection, parent_id: UUID = None, user_id: UUID = None) -> list[domain.Goal]:
-    if [parent_id, user_id].count(None) != 1:
-        raise ValueError("You must pass exactly one of parent_id or user_id")
-    if parent_id:
-        filter = tables.goals.c.parent_id == parent_id
-    elif user_id:
-        filter = tables.goals.c.user_id == user_id
-    stmt = select(tables.goals).where(filter).where(tables.goals.c.parent_id != None)
+            .where(tables.goals.c.user_id == user_id))
     result = conn.execute(stmt).all()
     goals = [domain.Goal(**row._mapping) for row in result]
     return goals

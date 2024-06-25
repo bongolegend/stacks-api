@@ -39,8 +39,8 @@ def get_user(email: EmailStr | None = None, username: str | None = None) -> list
         return JSONResponse({"error": "User not found"}, status_code=404)
     return [user]
 
-@router.get("/users/{user_id}/search")
-def get_user_search(user_id: UUID) -> list[domain.UserEnriched]:
+@router.get("/users/search/{user_id}")
+def get_search_users(user_id: UUID) -> list[domain.UserEnriched]:
     with engine.begin() as conn:
         users = api.search_users(conn, user_id)
     logging.debug(f"Users: {users}")
@@ -111,14 +111,6 @@ def get_goals(user_id: UUID) -> list[domain.Goal]:
     logging.debug(f"Goals: {goals}")
     return goals
 
-
-@router.get("/goals/subgoals")
-def get_subgoals(user_id: UUID = None, goal_id: UUID = None) -> list[domain.Goal]:
-    logging.debug(f"Getting subgoals for user: {user_id} or goal: {goal_id}")
-    with engine.begin() as conn:
-        goals = api.read_subgoals(conn, user_id=user_id, goal_id=goal_id)
-    logging.debug(f"Subgoals: {goals}")
-    return goals
 
 @router.patch("/goals/{goal_id}")
 def patch_goal(goal_id: UUID, updates: requests.UpdateGoal) -> domain.Goal:
