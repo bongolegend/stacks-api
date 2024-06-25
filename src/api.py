@@ -140,39 +140,6 @@ def delete_goal(conn: Connection, goal_id: UUID) -> None:
     stmt = delete(tables.goals).where(tables.goals.c.id == goal_id)
     conn.execute(stmt)
 
-### TASKS
-
-def create_task(conn: Connection, task: domain.Task) -> domain.Task:
-    stmt = insert(tables.tasks).values(**task.model_dump(exclude=EXCLUDED_FIELDS, exclude_none=True)).returning(tables.tasks)
-    inserted = conn.execute(stmt).fetchone()
-    return domain.Task(**inserted._mapping)
-
-def read_tasks(conn: Connection, user_id: UUID = None, goal_id: UUID = None) -> list[domain.Task]:
-    if [user_id, goal_id].count(None) != 1:
-        raise Exception("You must specify exactly one of `user_id`, `goal_id`")
-    if user_id:
-        filter = tables.tasks.c.user_id == user_id
-    elif goal_id:
-        filter = tables.tasks.c.goal_id == goal_id
-    stmt = select(tables.tasks).where(filter)
-    result = conn.execute(stmt).all()
-    if not result:
-        return []
-    tasks = [domain.Task(**row._mapping) for row in result]
-    return tasks
-
-def update_task(conn: Connection, task_id: UUID, updates: requests.UpdateTask) -> domain.Task:
-    stmt = (
-        update(tables.tasks)
-        .where(tables.tasks.c.id == task_id)
-        .values(**updates.model_dump(exclude_none=True))
-        .returning(tables.tasks))
-    updated = conn.execute(stmt).fetchone()
-    return domain.Task(**updated._mapping)
-
-def delete_task(conn: Connection, task_id: UUID) -> None:
-    stmt = delete(tables.tasks).where(tables.tasks.c.id == task_id)
-    conn.execute(stmt)
 
 ### REACTIONS
 
@@ -205,16 +172,14 @@ def create_comment(conn: Connection, comment: domain.Comment) -> domain.Comment:
     inserted = conn.execute(stmt).fetchone()
     return domain.Comment(**inserted._mapping)
 
-def read_comments(conn: Connection, user_id: UUID = None, goal_id: UUID = None, task_id: UUID = None) -> list[domain.CommentEnriched]:
-    # only one of user_id, goal_id, or task_id should be provided
-    if [user_id, goal_id, task_id].count(None) != 2:
-        raise ValueError("You must pass exactly one of user_id, goal_id or task_id")
+def read_comments(conn: Connection, user_id: UUID = None, goal_id: UUID = None) -> list[domain.CommentEnriched]:
+
+    if [user_id, goal_id].count(None) != 1:
+        raise ValueError("You must pass exactly one of user_id, goal_id")
     if user_id:
         filter = tables.comments.c.user_id == user_id
     elif goal_id:
         filter = tables.comments.c.goal_id == goal_id
-    elif task_id:
-        filter = tables.comments.c.task_id == task_id
     
     stmt = (
         select(tables.comments, *utils.prefix(tables.users, "u_"))
@@ -259,8 +224,8 @@ def generate_announcements(conn: Connection, follower_id: UUID, count: int = 20)
 
     result = conn.execute(union_query).all()
 
-    reactions = _read_reactions_or_comments(conn, tables.goals, result, tables.reactions, domain.Reaction)
-    comments = _read_reactions_or_comments(conn, tables.goals, result, tables.comments, domain.Comment)
+    reactions = _read_reactions_or_comments(conn, result, tables.reactions, domain.Reaction)
+    comments = _read_reactions_or_comments(conn, result, tables.comments, domain.Comment)
 
     announcements = []
     for row in result:
@@ -282,24 +247,17 @@ def generate_announcements(conn: Connection, follower_id: UUID, count: int = 20)
 
 
 def _read_reactions_or_comments(
-        conn: Connection, primary_table: Table, primary_result: list[Row], 
+        conn: Connection, primary_result: list[Row], 
         secondary_table: Table, result_type: domain.Reaction | domain.Comment
         ) -> dict[UUID, list[domain.Reaction | domain.Comment]]:
-    if primary_table == tables.goals:
-        foreign_key = secondary_table.c.goal_id
-    elif primary_table == tables.tasks:
-        foreign_key = secondary_table.c.task_id
-    else:
-        raise ValueError("table must be either `goals` or `tasks`")
 
     query = (select(secondary_table)
-                       .join(primary_table, foreign_key == primary_table.c.id)
-                       .where(foreign_key.in_([row.id for row in primary_result])))
+                       .join(tables.goals, secondary_table.c.goal_id == tables.goals.c.id)
+                       .where(secondary_table.c.goal_id.in_([row.id for row in primary_result])))
 
     result = conn.execute(query).all()
 
     secondaries = defaultdict(list)
     for row in result:
-        key = row.goal_id or row.task_id
-        secondaries[key].append(result_type(**row._mapping))
+        secondaries[row.goal_id].append(result_type(**row._mapping))
     return secondaries

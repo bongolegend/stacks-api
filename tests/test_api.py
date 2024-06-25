@@ -78,35 +78,13 @@ def test_create_read_update_delete_goal(commit_as_you_go):
 
     assert api.read_goals(commit_as_you_go, u0.id) == []
 
-def test_create_read_update_delete_task(commit_as_you_go):
-    u0 = utils.create_users_for_tests(commit_as_you_go, count=1)[0]
-    g0 = utils.create_goals_for_tests(commit_as_you_go, [u0], count=1)[0]
-    task = domain.Task(user_id=u0.id, goal_id=g0.id, description="task-description")
-    db_task = api.create_task(commit_as_you_go, task)
-    commit_as_you_go.commit()
-
-    assert api.read_tasks(commit_as_you_go, u0.id) == [db_task]
-
-    updates = requests.UpdateTask(is_completed=True)
-    updated_task = api.update_task(commit_as_you_go, db_task.id, updates)
-    commit_as_you_go.commit()
-
-    assert updated_task.is_completed != db_task.is_completed
-    assert updated_task.created_at == db_task.created_at
-    assert updated_task.updated_at > db_task.updated_at
-
-    api.delete_task(commit_as_you_go, db_task.id)
-    commit_as_you_go.commit()
-
-    assert api.read_tasks(commit_as_you_go, u0.id) == []
-
 
 def test_create_read_delete_reaction(commit_as_you_go):
     u0 = utils.create_users_for_tests(commit_as_you_go, count=1)[0]
     g0 = utils.create_goals_for_tests(commit_as_you_go, [u0], count=1)[0]
-    t0 = utils.create_tasks_for_tests(commit_as_you_go, [g0], count=1)[0]
+    t0 = utils.create_milestones_for_tests(commit_as_you_go, [g0], count=1)[0]
 
-    reaction = domain.Reaction(user_id=u0.id, reaction={'reaction': 'value'}, reaction_library='library', task_id=t0.id)
+    reaction = domain.Reaction(user_id=u0.id, reaction={'reaction': 'value'}, reaction_library='library', goal_id=t0.id)
     db_reaction = api.create_reaction(commit_as_you_go, reaction)
     commit_as_you_go.commit()
 
@@ -120,9 +98,9 @@ def test_create_read_delete_reaction(commit_as_you_go):
 def test_create_read_delete_comment(commit_as_you_go):
     u0 = utils.create_users_for_tests(commit_as_you_go, count=1)[0]
     g0 = utils.create_goals_for_tests(commit_as_you_go, [u0], count=1)[0]
-    t0 = utils.create_tasks_for_tests(commit_as_you_go, [g0], count=1)[0]
+    t0 = utils.create_milestones_for_tests(commit_as_you_go, [g0], count=1)[0]
 
-    comment = domain.Comment(user_id=u0.id, comment='comment', task_id=t0.id)
+    comment = domain.Comment(user_id=u0.id, comment='comment', goal_id=t0.id)
     db_comment = api.create_comment(commit_as_you_go, comment)
     commit_as_you_go.commit()
 
@@ -136,7 +114,7 @@ def test_create_read_delete_comment(commit_as_you_go):
 def test_generate_announcements(commit_as_you_go):
     u0, u1, u2 = utils.create_users_for_tests(commit_as_you_go, count=3)
     goals = utils.create_goals_for_tests(commit_as_you_go, users=[u0, u1, u2], count=1)
-    subgoals = utils.create_subgoals_for_tests(commit_as_you_go, goals, count=1)
+    subgoals = utils.create_milestones_for_tests(commit_as_you_go, goals, count=1)
     reactions = utils.create_reactions_for_tests(commit_as_you_go, u0, goals + subgoals, count=1)
     comments = utils.create_comments_for_tests(commit_as_you_go, u0, goals + subgoals, count=1)
 

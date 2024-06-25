@@ -29,9 +29,6 @@ class UserEnriched(User):
 class Goal(CustomBase, requests.NewGoal):
     pass
 
-class Task(CustomBase, requests.NewTask):
-    pass
-
 class Follow(requests.NewFollow):
     created_at: datetime | None = None
     updated_at: datetime | None = None

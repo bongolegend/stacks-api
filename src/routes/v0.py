@@ -126,38 +126,6 @@ def delete_goal(goal_id: UUID):
         api.delete_goal(conn, goal_id)
 
 
-### TASK
-
-@router.post("/tasks")
-def post_task(task: requests.NewTask) -> domain.Task:
-    logging.debug(f"Creating task: {task}")
-    with engine.begin() as conn:
-        s_task = api.create_task(conn, domain.Task(**task.model_dump()))
-    return s_task
-
-
-# @router.get("/tasks")
-# def get_tasks(user_id: UUID | None = None, goal_id: UUID | None = None) -> list[domain.Task]:
-#     logging.debug(f"Getting tasks for user: {user_id} and goal: {goal_id}")
-#     with engine.begin() as conn:
-#         tasks = api.read_tasks(conn, user_id=user_id, goal_id=goal_id)
-#     logging.debug(f"Tasks: {tasks}")
-#     return tasks
-
-@router.patch("/tasks/{task_id}")
-def patch_task(task_id: UUID, updates: requests.UpdateTask) -> domain.Task:
-    logging.debug(f"Updating task: {task_id} with {updates}")
-    with engine.begin() as conn:
-        goal = api.update_task(conn, task_id, updates)
-    logging.debug(f"Updated task: {goal}")
-    return goal
-
-@router.delete("/tasks/{task_id}")
-def delete_task(task_id: UUID):
-    with engine.begin() as conn:
-        api.delete_task(conn, UUID(task_id))
-
-
 ### ANNOUNCEMENTS
 
 @router.get("/announcements/{follower_id}")
@@ -189,9 +157,9 @@ def post_comment(comment: requests.NewComment) -> domain.Comment:
     return s_comment
 
 @router.get("/comments")
-def get_comments(user_id: UUID | None = None, goal_id: UUID | None = None, task_id: UUID | None = None) -> list[domain.CommentEnriched]:    
-    logging.debug(f"Getting comments for user: {user_id}, goal: {goal_id}, or task: {task_id}")
+def get_comments(user_id: UUID | None = None, goal_id: UUID | None = None) -> list[domain.CommentEnriched]:    
+    logging.debug(f"Getting comments for user: {user_id}, goal: {goal_id}")
     with engine.begin() as conn:
-        comments = api.read_comments(conn, user_id=user_id, goal_id=goal_id, task_id=task_id)
+        comments = api.read_comments(conn, user_id=user_id, goal_id=goal_id)
     logging.debug(f"Comments: {comments}")
     return comments
