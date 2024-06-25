@@ -49,8 +49,7 @@ class CommentEnriched(Comment):
     user: User
 
 
-class Post(BaseModel):
-    """A Post is an entity in a timeline. It is a way to share goals and tasks"""
+class Announcement(BaseModel):
     id: UUID
     user: User
     goal: Goal

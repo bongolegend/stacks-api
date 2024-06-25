@@ -158,14 +158,14 @@ def delete_task(task_id: UUID):
         api.delete_task(conn, UUID(task_id))
 
 
-### TIMELINES
+### ANNOUNCEMENTS
 
-@router.get("/timelines/{follower_id}/leaders")
-def get_timeline_of_leaders(follower_id: UUID) -> list[domain.Post]:
-    logging.debug(f"Getting timeline of leaders for user: {follower_id}")
+@router.get("/announcements/{follower_id}")
+def get_announcements(follower_id: UUID) -> list[domain.Announcement]:
+    logging.debug(f"Getting announcements for user: {follower_id}")
     with engine.begin() as conn:
-        timeline = api.generate_timeline_of_leaders(conn, follower_id)
-    logging.debug(f"Timeline: {timeline}")
+        timeline = api.generate_announcements(conn, follower_id)
+    logging.debug(f"Announcements: {timeline}")
     return timeline
 
 

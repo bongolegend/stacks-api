@@ -10,7 +10,7 @@ from src.types import domain, requests
 # exclude these fields from create functions
 EXCLUDED_FIELDS = {"created_at", "updated_at"}
 
-### USER
+### USERS
 
 def create_user(conn: Connection, user: domain.User) -> domain.User:
     stmt = insert(tables.users).values(**user.model_dump(exclude=EXCLUDED_FIELDS, exclude_none=True)).returning(tables.users)
@@ -83,7 +83,7 @@ def delete_user(conn: Connection, user_id: UUID) -> None:
     stmt = delete(tables.users).where(tables.users.c.id == user_id)
     conn.execute(stmt)
 
-### FOLLOW
+### FOLLOWS
 
 def create_follow(conn: Connection, follow: domain.Follow) -> domain.Follow:
     stmt = insert(tables.follows) \
@@ -113,7 +113,7 @@ def read_follow_counts(conn: Connection, user_id: UUID) -> domain.FollowCounts:
     
     return domain.FollowCounts(**{row.type: row.count for row in result})
 
-### GOAL
+### GOALS
 
 def create_goal(conn: Connection, goal: domain.Goal) -> domain.Goal:
     stmt = insert(tables.goals).values(**goal.model_dump(exclude=EXCLUDED_FIELDS, exclude_none=True)).returning(tables.goals)
@@ -140,7 +140,7 @@ def delete_goal(conn: Connection, goal_id: UUID) -> None:
     stmt = delete(tables.goals).where(tables.goals.c.id == goal_id)
     conn.execute(stmt)
 
-### TASK
+### TASKS
 
 def create_task(conn: Connection, task: domain.Task) -> domain.Task:
     stmt = insert(tables.tasks).values(**task.model_dump(exclude=EXCLUDED_FIELDS, exclude_none=True)).returning(tables.tasks)
@@ -174,7 +174,7 @@ def delete_task(conn: Connection, task_id: UUID) -> None:
     stmt = delete(tables.tasks).where(tables.tasks.c.id == task_id)
     conn.execute(stmt)
 
-### REACTION
+### REACTIONS
 
 def create_reaction(conn: Connection, reaction: domain.Reaction) -> domain.Reaction:
     stmt = (
@@ -195,7 +195,7 @@ def delete_reaction(conn: Connection, reaction_id: UUID) -> None:
     conn.execute(stmt)
 
 
-### COMMENT
+### COMMENTS
 
 def create_comment(conn: Connection, comment: domain.Comment) -> domain.Comment:
     stmt = (
@@ -232,60 +232,9 @@ def delete_comment(conn: Connection, comment_id: UUID) -> None:
     stmt = delete(tables.comments).where(tables.comments.c.id == comment_id)
     conn.execute(stmt)
 
+### ANNOUNCEMENTS
 
-### TIMELINE
-
-
-def generate_timeline_of_leaders(conn: Connection, follower_id: UUID, count: int = 20) -> list[domain.Post]:  
-    """This also includes the posts of the follower_id"""
-    posts = _generate_goal_posts(conn, follower_id, count)
-    # tasks = _generate_task_posts(conn, follower_id, count)
-    # posts = sorted(goals + tasks, key=lambda post: post.sort_on, reverse=True)
-    return posts
-
-
-def _generate_task_posts(conn: Connection, follower_id: UUID, count: int = 20) -> list[domain.Post]:
-    base_query = (select(
-                    tables.tasks.c.id,
-                    *utils.prefix(tables.users, "u_"),
-                    *utils.prefix(tables.goals, "g_"),
-                    *utils.prefix(tables.tasks, "t_"),
-                    tables.tasks.c.updated_at.label("sort_on"))
-                  .select_from(tables.tasks)
-                  .join(tables.users)
-                  .join(tables.goals, tables.tasks.c.goal_id == tables.goals.c.id)
-                  .where(tables.tasks.c.is_completed == True))
-    
-    leaders_query = (base_query
-                        .join(tables.follows, tables.users.c.id == tables.follows.c.leader_id)
-                        .where(tables.follows.c.follower_id == follower_id))
-    
-    self_query = (base_query
-                    .where(tables.tasks.c.user_id == follower_id))
-
-    union_query = union(leaders_query, self_query).order_by(desc("sort_on")).limit(count)
-
-    primary_result = conn.execute(union_query).all()
-
-    reactions = _read_reactions_or_comments(conn, tables.tasks, primary_result, tables.reactions, domain.Reaction)
-    comments = _read_reactions_or_comments(conn, tables.tasks, primary_result, tables.comments, domain.Comment)
-
-    posts = [
-        domain.Post(
-            id=row.id,
-            user=utils.filter_by_prefix(row, "u_"),
-            goal=utils.filter_by_prefix(row, "g_"),
-            task=utils.filter_by_prefix(row, "t_"),
-            reactions=reactions.get(row.id, []),
-            comments_count=len(comments.get(row.id, [])),
-            sort_on=row.sort_on
-        )
-        for row in primary_result
-    ]
-    return posts
-
-
-def _generate_goal_posts(conn: Connection, follower_id: UUID, count: int = 20) -> list[domain.Post]:
+def generate_announcements(conn: Connection, follower_id: UUID, count: int = 20) -> list[domain.Announcement]:
     primary = tables.goals.alias('primary')
     parent = tables.goals.alias('parent')
 
@@ -313,13 +262,13 @@ def _generate_goal_posts(conn: Connection, follower_id: UUID, count: int = 20) -
     reactions = _read_reactions_or_comments(conn, tables.goals, result, tables.reactions, domain.Reaction)
     comments = _read_reactions_or_comments(conn, tables.goals, result, tables.comments, domain.Comment)
 
-    posts = []
+    announcements = []
     for row in result:
         if row.primary_parent_id is None:
             parent = None
         else:
             parent = domain.Goal(**utils.filter_by_prefix(row, "parent_"))
-        posts.append(domain.Post(
+        announcements.append(domain.Announcement(
             id=row.id,
             user=utils.filter_by_prefix(row, "u_"),
             goal=utils.filter_by_prefix(row, "primary_"),
@@ -329,9 +278,7 @@ def _generate_goal_posts(conn: Connection, follower_id: UUID, count: int = 20) -
             sort_on=row.sort_on
         ))
 
-    return posts
-
-
+    return announcements
 
 
 def _read_reactions_or_comments(
