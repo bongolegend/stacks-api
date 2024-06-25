@@ -1,14 +1,14 @@
 # stacks
 Stack your progress and achieve greatness.
 
-## Motivation
-We like to stay connected, and we like to accomplish things. Do both with `stacks`; declare your goals to your friends and be held accountable.
-
 ## Develop
 
 ### Setup
 This project has the fixins to use VSCode dev containers.
-You need to mod `setup.sh` to include you git creds.
+You need to mod `setup-dev.sh` to include you git creds.
+
+You should use the VS Code command palette and "reopen in Container".
+But if you need to build and manage docker manually here are some useful commands:
 
 To build the image
 ```
