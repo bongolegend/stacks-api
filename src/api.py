@@ -239,7 +239,7 @@ def generate_announcements(conn: Connection, follower_id: UUID, count: int = 20)
             goal=utils.filter_by_prefix(row, "primary_"),
             parent=parent,
             reactions=reactions.get(row.id, []),
-            comments_count=len(comments.get(row.id, [])),
+            comment_count=len(comments.get(row.id, [])),
             sort_on=row.sort_on
         ))
 

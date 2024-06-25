@@ -125,7 +125,7 @@ def test_generate_announcements(commit_as_you_go):
     timeline = api.generate_announcements(commit_as_you_go, u0.id)
     assert len(timeline) == 2
     assert all([len(p.reactions) == 1 for p in timeline])
-    assert all([p.comments_count == 1 for p in timeline])
+    assert all([p.comment_count == 1 for p in timeline])
 
     timeline2 = api.generate_announcements(commit_as_you_go, u1.id)
     assert len(timeline2) == 4

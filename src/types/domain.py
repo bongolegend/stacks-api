@@ -52,6 +52,6 @@ class Announcement(BaseModel):
     goal: Goal
     parent: Goal | None = None
     reactions: list[Reaction] = []
-    comments_count: int = 0
+    comment_count: int = 0
     sort_on: datetime
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
