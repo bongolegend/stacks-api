@@ -120,11 +120,27 @@ def create_goal(conn: Connection, goal: domain.Goal) -> domain.Goal:
     inserted = conn.execute(stmt).fetchone()
     return domain.Goal(**inserted._mapping)
 
-def read_goals(conn: Connection, user_id: UUID) -> list[domain.Goal]:
-    stmt = (select(tables.goals)
-            .where(tables.goals.c.user_id == user_id))
-    result = conn.execute(stmt).all()
-    goals = [domain.Goal(**row._mapping) for row in result]
+def read_goals(conn: Connection, user_id: UUID) -> list[domain.GoalEnriched]:
+    primary = tables.goals.alias('primary')
+    parent = tables.goals.alias('parent')
+    query = (select(
+                    *utils.prefix(primary, "primary_"),
+                    *utils.prefix(parent, "parent_"),
+                    *utils.prefix(tables.users, "u_"))
+                  .select_from(primary)
+                  .join(tables.users)
+                  .outerjoin(parent, primary.c.parent_id == parent.c.id)
+                  .where(primary.c.user_id == user_id))
+    
+    result = conn.execute(query).all()
+
+    goals = [domain.GoalEnriched(
+                user=utils.filter_by_prefix(row, "u_"),
+                parent=domain.Goal(**utils.filter_by_prefix(row, "parent_")) if row.primary_parent_id else None,
+                **utils.filter_by_prefix(row, "primary_")
+                )
+            for row in result]
+    
     return goals
 
 def update_goal(conn: Connection, goal_id: UUID, updates: requests.UpdateGoal) -> domain.Goal:

@@ -55,3 +55,8 @@ class Announcement(BaseModel):
     comment_count: int = 0
     sort_on: datetime
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class GoalEnriched(Goal):
+    user: User
+    parent: Goal | None = None

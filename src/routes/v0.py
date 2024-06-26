@@ -104,7 +104,7 @@ def post_goal(goal: requests.NewGoal) -> domain.Goal:
 
 
 @router.get("/goals")
-def get_goals(user_id: UUID) -> list[domain.Goal]:
+def get_goals(user_id: UUID) -> list[domain.GoalEnriched]:
     logging.debug(f"Getting goals for user: {user_id}")
     with engine.begin() as conn:
         goals = api.read_goals(conn, user_id)
