@@ -146,6 +146,14 @@ def post_reaction(reaction: requests.NewReaction) -> domain.Reaction:
         s_reaction = api.create_reaction(conn, domain.Reaction(**reaction.model_dump()))
     return s_reaction
 
+@router.get("/reactions")
+def get_reactions(user_id: UUID | None = None, goal_id: UUID | None = None) -> list[domain.Reaction]:
+    logging.debug(f"Getting reactions for user: {user_id}, goal: {goal_id}")
+    with engine.begin() as conn:
+        reactions = api.read_reactions(conn, user_id=user_id, goal_id=goal_id)
+    logging.debug(f"Reactions: {reactions}")
+    return reactions
+
 
 ### COMMENTS
 

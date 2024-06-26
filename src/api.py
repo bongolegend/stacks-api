@@ -151,8 +151,14 @@ def create_reaction(conn: Connection, reaction: domain.Reaction) -> domain.React
     inserted = conn.execute(stmt).fetchone()
     return domain.Reaction(**inserted._mapping)
 
-def read_reactions(conn: Connection, user_id: UUID) -> list[domain.Reaction]:
-    stmt = select(tables.reactions).where(tables.reactions.c.user_id == user_id)
+def read_reactions(conn: Connection, user_id: UUID = None, goal_id: UUID = None) -> list[domain.Reaction]:
+    if [user_id, goal_id].count(None) != 1:
+        raise ValueError("You must pass exactly one of user_id, goal_id")
+    if goal_id:
+        filter = tables.reactions.c.goal_id == goal_id
+    elif user_id:
+        filter = tables.reactions.c.user_id == user_id
+    stmt = select(tables.reactions).where(filter)
     result = conn.execute(stmt).all()
     reactions = [domain.Reaction(**row._mapping) for row in result]
     return reactions
