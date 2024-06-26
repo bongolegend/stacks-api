@@ -120,7 +120,7 @@ def create_goal(conn: Connection, goal: domain.Goal) -> domain.Goal:
     inserted = conn.execute(stmt).fetchone()
     return domain.Goal(**inserted._mapping)
 
-def read_goals(conn: Connection, user_id: UUID) -> list[domain.GoalEnriched]:
+def read_goals(conn: Connection, user_id: UUID, announcements_only: bool = False) -> list[domain.GoalEnriched]:
     primary = tables.goals.alias('primary')
     parent = tables.goals.alias('parent')
     query = (select(
@@ -134,14 +134,26 @@ def read_goals(conn: Connection, user_id: UUID) -> list[domain.GoalEnriched]:
     
     result = conn.execute(query).all()
 
-    goals = [domain.GoalEnriched(
+    goals = []
+    for row in result:
+        condition = True
+        if announcements_only:
+            condition = row.primary_parent_id is None or row.primary_is_completed
+        if condition:
+            goals.append(domain.GoalEnriched(
                 user=utils.filter_by_prefix(row, "u_"),
                 parent=domain.Goal(**utils.filter_by_prefix(row, "parent_")) if row.primary_parent_id else None,
                 **utils.filter_by_prefix(row, "primary_")
-                )
-            for row in result]
+                ))
     
     return goals
+
+def read_announcements(conn: Connection, user_id: UUID) -> list[domain.GoalEnriched]:
+    announcements = read_goals(conn, user_id, announcements_only=True)
+    leaders = read_leaders(conn, user_id)
+    for leader in leaders:
+        announcements += read_goals(conn, leader.id, announcements_only=True)
+    return announcements
 
 def update_goal(conn: Connection, goal_id: UUID, updates: requests.UpdateGoal) -> domain.Goal:
     stmt = (
@@ -218,68 +230,3 @@ def read_comments(conn: Connection, user_id: UUID = None, goal_id: UUID = None) 
 def delete_comment(conn: Connection, comment_id: UUID) -> None:
     stmt = delete(tables.comments).where(tables.comments.c.id == comment_id)
     conn.execute(stmt)
-
-### ANNOUNCEMENTS
-
-def generate_announcements(conn: Connection, follower_id: UUID, count: int = 20) -> list[domain.Announcement]:
-    primary = tables.goals.alias('primary')
-    parent = tables.goals.alias('parent')
-
-    base_query = (select(
-                    primary.c.id,
-                    *utils.prefix(primary, "primary_"),
-                    *utils.prefix(parent, "parent_"),
-                    *utils.prefix(tables.users, "u_"),
-                    primary.c.updated_at.label("sort_on"))
-                  .select_from(primary)
-                  .join(tables.users)
-                  .outerjoin(parent, primary.c.parent_id == parent.c.id))
-    
-    leaders_query = (base_query
-                        .join(tables.follows, tables.users.c.id == tables.follows.c.leader_id)
-                        .where(tables.follows.c.follower_id == follower_id))
-    
-    self_query = (base_query
-                    .where(primary.c.user_id == follower_id))
-
-    union_query = union(leaders_query, self_query).order_by(desc("sort_on")).limit(count)
-
-    result = conn.execute(union_query).all()
-
-    reactions = _read_reactions_or_comments(conn, result, tables.reactions, domain.Reaction)
-    comments = _read_reactions_or_comments(conn, result, tables.comments, domain.Comment)
-
-    announcements = []
-    for row in result:
-        if row.primary_parent_id is None:
-            parent = None
-        else:
-            parent = domain.Goal(**utils.filter_by_prefix(row, "parent_"))
-        announcements.append(domain.Announcement(
-            id=row.id,
-            user=utils.filter_by_prefix(row, "u_"),
-            goal=utils.filter_by_prefix(row, "primary_"),
-            parent=parent,
-            reactions=reactions.get(row.id, []),
-            comment_count=len(comments.get(row.id, [])),
-            sort_on=row.sort_on
-        ))
-
-    return announcements
-
-
-def _read_reactions_or_comments(
-        conn: Connection, primary_result: list[Row], 
-        secondary_table: Table, result_type: domain.Reaction | domain.Comment
-        ) -> dict[UUID, list[domain.Reaction | domain.Comment]]:
-
-    query = (select(secondary_table)
-                       .join(tables.goals, secondary_table.c.goal_id == tables.goals.c.id)
-                       .where(secondary_table.c.goal_id.in_([row.id for row in primary_result])))
-
-    result = conn.execute(query).all()
-
-    secondaries = defaultdict(list)
-    for row in result:
-        secondaries[row.goal_id].append(result_type(**row._mapping))
-    return secondaries

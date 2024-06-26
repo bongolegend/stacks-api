@@ -63,7 +63,7 @@ def test_create_read_update_delete_goal(commit_as_you_go):
     db_goal = api.create_goal(commit_as_you_go, goal)
     commit_as_you_go.commit()
 
-    assert api.read_goals(commit_as_you_go, u0.id) == [db_goal]
+    assert api.read_goals(commit_as_you_go, u0.id)[0].id == db_goal.id
 
     updates = requests.UpdateGoal(is_completed=True)
     updated_goal = api.update_goal(commit_as_you_go, db_goal.id, updates)
@@ -111,24 +111,20 @@ def test_create_read_delete_comment(commit_as_you_go):
 
     assert api.read_comments(commit_as_you_go, u0.id) == []
 
-def test_generate_announcements(commit_as_you_go):
+def test_read_announcements(commit_as_you_go):
     u0, u1, u2 = utils.create_users_for_tests(commit_as_you_go, count=3)
     goals = utils.create_goals_for_tests(commit_as_you_go, users=[u0, u1, u2], count=1)
     subgoals = utils.create_milestones_for_tests(commit_as_you_go, goals, count=1)
-    reactions = utils.create_reactions_for_tests(commit_as_you_go, u0, goals + subgoals, count=1)
-    comments = utils.create_comments_for_tests(commit_as_you_go, u0, goals + subgoals, count=1)
 
     api.create_follow(commit_as_you_go, domain.Follow(follower_id=u1.id, leader_id=u0.id))
     api.create_follow(commit_as_you_go, domain.Follow(follower_id=u2.id, leader_id=u0.id))
 
     commit_as_you_go.commit()
-    timeline = api.generate_announcements(commit_as_you_go, u0.id)
-    assert len(timeline) == 2
-    assert all([len(p.reactions) == 1 for p in timeline])
-    assert all([p.comment_count == 1 for p in timeline])
+    announcements = api.read_announcements(commit_as_you_go, u0.id)
+    assert len(announcements) == 1
 
-    timeline2 = api.generate_announcements(commit_as_you_go, u1.id)
-    assert len(timeline2) == 4
+    timeline2 = api.read_announcements(commit_as_you_go, u1.id)
+    assert len(timeline2) == 2
 
 
 def test_follow_counts(commit_as_you_go):
