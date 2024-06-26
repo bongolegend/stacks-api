@@ -21,6 +21,7 @@ def post_user(user: requests.NewUser) -> domain.User:
     logging.debug(f"Creating user: {user}")
     with engine.begin() as conn:
         s_user = api.create_user(conn, domain.User(**user.model_dump()))
+        conn.close()
     return s_user
 
 
@@ -28,6 +29,7 @@ def post_user(user: requests.NewUser) -> domain.User:
 def get_user(user_id: UUID) -> domain.User:
     with engine.begin() as conn:
         user = api.read_user(conn, id=user_id)
+        conn.close()
     return user
 
 @router.get("/users")
@@ -35,6 +37,7 @@ def get_user(email: EmailStr | None = None, username: str | None = None) -> list
     with engine.begin() as conn:
         assert len(username) >= 3
         user = api.read_user(conn, email=email, username=username)
+        conn.close()
     if user is None:
         return JSONResponse({"error": "User not found"}, status_code=404)
     return [user]
@@ -43,6 +46,7 @@ def get_user(email: EmailStr | None = None, username: str | None = None) -> list
 def get_search_users(user_id: UUID) -> list[domain.UserEnriched]:
     with engine.begin() as conn:
         users = api.search_users(conn, user_id)
+        conn.close()
     logging.debug(f"Users: {users}")
     return users
 
@@ -50,6 +54,7 @@ def get_search_users(user_id: UUID) -> list[domain.UserEnriched]:
 def delete_user(user_id: UUID):
     with engine.begin() as conn:
         api.delete_user(conn, user_id)
+        conn.close()
 
 
 @router.get("/users/leaders/{user_id}")
@@ -57,6 +62,7 @@ def get_leaders(user_id: UUID) -> list[domain.UserEnriched]:
     logging.debug(f"Getting leaders for user: {user_id}")
     with engine.begin() as conn:
         leaders = api.read_leaders(conn, user_id)
+        conn.close()
     logging.debug(f"Leaders: {leaders}")
     return leaders
 
@@ -66,6 +72,7 @@ def get_followers(user_id: UUID) -> list[domain.UserEnriched]:
     logging.debug(f"Getting followers for user: {user_id}")
     with engine.begin() as conn:
         followers = api.read_followers(conn, user_id)
+        conn.close()
     logging.debug(f"Followers: {followers}")
     return followers
 
@@ -76,6 +83,7 @@ def post_follow(follow: requests.NewFollow) -> domain.Follow:
     logging.debug(f"Creating follow: {follow}")
     with engine.begin() as conn:
         s_follow = api.create_follow(conn, domain.Follow(**follow.model_dump()))
+        conn.close()
     return s_follow
 
 
@@ -84,12 +92,14 @@ def delete_follow(follower_id: UUID, leader_id: UUID):
     logging.debug(f"Deleting follow: {follower_id}")
     with engine.begin() as conn:
         api.delete_follow(conn, domain.Follow(follower_id=follower_id, leader_id=leader_id))
+        conn.close()
 
 @router.get("/follows/counts/{user_id}")
 def get_follow_counts(user_id: UUID) -> domain.FollowCounts:
     logging.debug(f"Getting follow counts for user: {user_id}")
     with engine.begin() as conn:
         counts = api.read_follow_counts(conn, user_id)
+        conn.close()
     logging.debug(f"Follow counts: {counts}")
     return counts
 
@@ -100,6 +110,7 @@ def post_goal(goal: requests.NewGoal) -> domain.Goal:
     logging.debug(f"Creating goal: {goal}")
     with engine.begin() as conn:
         s_goal = api.create_goal(conn, domain.Goal(**goal.model_dump()))
+        conn.close()
     return s_goal
 
 
@@ -108,6 +119,7 @@ def get_goals(user_id: UUID) -> list[domain.GoalEnriched]:
     logging.debug(f"Getting goals for user: {user_id}")
     with engine.begin() as conn:
         goals = api.read_goals(conn, user_id)
+        conn.close()
     logging.debug(f"Goals: {goals}")
     return goals
 
@@ -116,6 +128,7 @@ def get_announcements(user_id: UUID) -> list[domain.GoalEnriched]:
     logging.debug(f"Getting announcements for user: {user_id}")
     with engine.begin() as conn:
         announcements = api.read_announcements(conn, user_id)
+        conn.close()
     logging.debug(f"Announcements: {announcements}")
     return announcements
 
@@ -125,6 +138,7 @@ def patch_goal(goal_id: UUID, updates: requests.UpdateGoal) -> domain.Goal:
     logging.debug(f"Updating goal: {goal_id} with {updates}")
     with engine.begin() as conn:
         goal = api.update_goal(conn, goal_id, updates)
+        conn.close()
     return goal
 
 
@@ -132,6 +146,7 @@ def patch_goal(goal_id: UUID, updates: requests.UpdateGoal) -> domain.Goal:
 def delete_goal(goal_id: UUID):
     with engine.begin() as conn:
         api.delete_goal(conn, goal_id)
+        conn.close()
 
 
 ### REACTIONS
@@ -141,6 +156,7 @@ def post_reaction(reaction: requests.NewReaction) -> domain.Reaction:
     logging.debug(f"Creating reaction: {reaction}")
     with engine.begin() as conn:
         s_reaction = api.create_reaction(conn, domain.Reaction(**reaction.model_dump()))
+        conn.close()
     return s_reaction
 
 @router.get("/reactions")
@@ -148,6 +164,7 @@ def get_reactions(user_id: UUID | None = None, goal_id: UUID | None = None) -> l
     logging.debug(f"Getting reactions for user: {user_id}, goal: {goal_id}")
     with engine.begin() as conn:
         reactions = api.read_reactions(conn, user_id=user_id, goal_id=goal_id)
+        conn.close()
     logging.debug(f"Reactions: {reactions}")
     return reactions
 
@@ -159,6 +176,7 @@ def post_comment(comment: requests.NewComment) -> domain.Comment:
     logging.debug(f"Creating comment: {comment}")
     with engine.begin() as conn:
         s_comment = api.create_comment(conn, domain.Comment(**comment.model_dump()))
+        conn.close()
     return s_comment
 
 @router.get("/comments")
@@ -166,5 +184,6 @@ def get_comments(user_id: UUID | None = None, goal_id: UUID | None = None) -> li
     logging.debug(f"Getting comments for user: {user_id}, goal: {goal_id}")
     with engine.begin() as conn:
         comments = api.read_comments(conn, user_id=user_id, goal_id=goal_id)
+        conn.close()
     logging.debug(f"Comments: {comments}")
     return comments
