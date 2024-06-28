@@ -1,11 +1,23 @@
 dev:
   db: 
     url: postgresql://admin:password@postgres/stacks
+    # default pool size is 5
+    pool_size: 5
+    # default max_overflow is 10
+    max_overflow: 10
+    # default pool_recycle is -1 (no recycle)
+    pool_recycle: 3600
 prod-debug:
   db:
     # if you run cloud sql auth proxy on host machine
     url: postgresql://postgres:password@host.docker.internal:9999/stacks
+    pool_size: 5
+    max_overflow: 10
+    pool_recycle: 3600
 prod:
   db:
     # TODO security
     url: postgresql+pg8000://postgres:password@/stacks?unix_sock=/cloudsql/stacks-426020:us-central1:baby-db-0/.s.PGSQL.5432
+    pool_size: 5
+    max_overflow: 30
+    pool_recycle: 3600

@@ -1,8 +1,9 @@
+from typing import Annotated
 import logging
 from uuid import UUID
 
 from fastapi.responses import JSONResponse
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from pydantic import EmailStr
 
 from src.types import requests, domain
@@ -103,13 +104,21 @@ def post_goal(goal: requests.NewGoal) -> domain.Goal:
     return s_goal
 
 
-@router.get("/goals")
-def get_goals(user_id: UUID) -> list[domain.Goal]:
+@router.get("/goals/{user_id}")
+def get_goals(user_id: UUID) -> list[domain.GoalEnriched]:
     logging.debug(f"Getting goals for user: {user_id}")
     with engine.begin() as conn:
         goals = api.read_goals(conn, user_id)
     logging.debug(f"Goals: {goals}")
     return goals
+
+@router.get("/goals/announcements/{user_id}")
+def get_announcements(user_id: UUID) -> list[domain.GoalEnriched]:
+    logging.debug(f"Getting announcements for user: {user_id}")
+    with engine.begin() as conn:
+        announcements = api.read_announcements(conn, user_id)
+    logging.debug(f"Announcements: {announcements}")
+    return announcements
 
 
 @router.patch("/goals/{goal_id}")
@@ -126,17 +135,6 @@ def delete_goal(goal_id: UUID):
         api.delete_goal(conn, goal_id)
 
 
-### ANNOUNCEMENTS
-
-@router.get("/announcements/{follower_id}")
-def get_announcements(follower_id: UUID) -> list[domain.Announcement]:
-    logging.debug(f"Getting announcements for user: {follower_id}")
-    with engine.begin() as conn:
-        timeline = api.generate_announcements(conn, follower_id)
-    logging.debug(f"Announcements: {timeline}")
-    return timeline
-
-
 ### REACTIONS
 
 @router.post("/reactions")
@@ -145,6 +143,14 @@ def post_reaction(reaction: requests.NewReaction) -> domain.Reaction:
     with engine.begin() as conn:
         s_reaction = api.create_reaction(conn, domain.Reaction(**reaction.model_dump()))
     return s_reaction
+
+@router.get("/reactions")
+def get_reactions(goal_ids: Annotated[list[UUID], Query()] = None) -> dict[UUID, list[domain.Reaction]]:
+    logging.debug(f"Getting reactions for goals: {goal_ids}")
+    with engine.begin() as conn:
+        reactions = api.read_reactions(conn, goal_ids=goal_ids)
+    logging.debug(f"Reactions: {reactions}")
+    return reactions
 
 
 ### COMMENTS
@@ -163,3 +169,10 @@ def get_comments(user_id: UUID | None = None, goal_id: UUID | None = None) -> li
         comments = api.read_comments(conn, user_id=user_id, goal_id=goal_id)
     logging.debug(f"Comments: {comments}")
     return comments
+
+@router.get("/comments/count")
+def get_comment_counts(goal_ids: Annotated[list[UUID], Query()] = None) -> list[domain.CommentCount]:
+    logging.debug(f"Getting comment count for goals: {goal_ids}")
+    with engine.begin() as conn:
+        counts = api.read_comment_counts(conn, goal_ids)
+    return counts
