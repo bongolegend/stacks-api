@@ -7,8 +7,12 @@
       "vscode": {
         "extensions": [
             "ms-python.python",
-            "eamodio.gitlens"
+            "eamodio.gitlens",
+            "mhutchie.git-graph"
         ]
       }
-    }
+    },
+    "mounts": [
+        "source=/home/kaja/.ssh,target=/root/.ssh,type=bind"
+    ]  
   }

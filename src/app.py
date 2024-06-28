@@ -1,4 +1,5 @@
 import logging
+import structlog
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -9,6 +10,9 @@ from src.routes import common, v0
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
+log = structlog.get_logger()
+log.info("this is a test", key="value!")
 
 app = FastAPI()
 
