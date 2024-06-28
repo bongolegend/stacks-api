@@ -179,16 +179,12 @@ def create_reaction(conn: Connection, reaction: domain.Reaction) -> domain.React
     inserted = conn.execute(stmt).fetchone()
     return domain.Reaction(**inserted._mapping)
 
-def read_reactions(conn: Connection, user_id: UUID = None, goal_id: UUID = None) -> list[domain.Reaction]:
-    if [user_id, goal_id].count(None) != 1:
-        raise ValueError("You must pass exactly one of user_id, goal_id")
-    if goal_id:
-        filter = tables.reactions.c.goal_id == goal_id
-    elif user_id:
-        filter = tables.reactions.c.user_id == user_id
-    stmt = select(tables.reactions).where(filter)
+def read_reactions(conn: Connection, goal_ids: list[UUID]) -> dict[UUID, list[domain.Reaction]]:
+    stmt = select(tables.reactions).where(tables.reactions.c.goal_id.in_(goal_ids))
     result = conn.execute(stmt).all()
-    reactions = [domain.Reaction(**row._mapping) for row in result]
+    reactions = defaultdict(list)
+    for row in result:
+        reactions[row.goal_id].append(domain.Reaction(**row._mapping))
     return reactions
 
 def delete_reaction(conn: Connection, reaction_id: UUID) -> None:
@@ -235,3 +231,13 @@ def read_comment_count(conn: Connection, goal_id: UUID) -> domain.CommentCount:
     stmt = select(func.count()).select_from(tables.comments).where(tables.comments.c.goal_id == goal_id)
     result = conn.execute(stmt).scalar()
     return domain.CommentCount(goal_id=goal_id, count=result)
+
+def read_comment_counts(conn: Connection, goal_ids: list[UUID]) -> list[domain.CommentCount]:
+    stmt = (
+        select(tables.comments.c.goal_id, func.count())
+        .select_from(tables.comments)
+        .where(tables.comments.c.goal_id.in_(goal_ids))
+        .group_by(tables.comments.c.goal_id))
+    result = conn.execute(stmt).all()
+    counts = [domain.CommentCount(goal_id=row.goal_id, count=row.count) for row in result]
+    return counts

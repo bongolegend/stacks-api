@@ -1,8 +1,9 @@
+from typing import Annotated
 import logging
 from uuid import UUID
 
 from fastapi.responses import JSONResponse
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from pydantic import EmailStr
 
 from src.types import requests, domain
@@ -144,10 +145,10 @@ def post_reaction(reaction: requests.NewReaction) -> domain.Reaction:
     return s_reaction
 
 @router.get("/reactions")
-def get_reactions(user_id: UUID | None = None, goal_id: UUID | None = None) -> list[domain.Reaction]:
-    logging.debug(f"Getting reactions for user: {user_id}, goal: {goal_id}")
+def get_reactions(goal_ids: Annotated[list[UUID], Query()] = None) -> dict[UUID, list[domain.Reaction]]:
+    logging.debug(f"Getting reactions for goals: {goal_ids}")
     with engine.begin() as conn:
-        reactions = api.read_reactions(conn, user_id=user_id, goal_id=goal_id)
+        reactions = api.read_reactions(conn, goal_ids=goal_ids)
     logging.debug(f"Reactions: {reactions}")
     return reactions
 
@@ -170,9 +171,8 @@ def get_comments(user_id: UUID | None = None, goal_id: UUID | None = None) -> li
     return comments
 
 @router.get("/comments/count")
-def get_comment_count(goal_id: UUID) -> domain.CommentCount:
-    logging.debug(f"Getting comment count for goal: {goal_id}")
+def get_comment_counts(goal_ids: Annotated[list[UUID], Query()] = None) -> list[domain.CommentCount]:
+    logging.debug(f"Getting comment count for goals: {goal_ids}")
     with engine.begin() as conn:
-        count = api.read_comment_count(conn, goal_id)
-    logging.debug(f"Comment count: {count}")
-    return count
+        counts = api.read_comment_counts(conn, goal_ids)
+    return counts
