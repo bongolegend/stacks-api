@@ -140,3 +140,14 @@ def test_follow_counts(commit_as_you_go):
     follow_counts = api.read_follow_counts(commit_as_you_go, u1.id)
     assert follow_counts.followers == 0
     assert follow_counts.leaders == 1
+
+def test_read_comment_count(commit_as_you_go):
+    u0, u1, u2 = utils.create_users_for_tests(commit_as_you_go, count=3)
+    g0 = utils.create_goals_for_tests(commit_as_you_go, [u0], count=1)[0]
+
+    api.create_comment(commit_as_you_go, domain.Comment(user_id=u1.id, comment='comment', goal_id=g0.id))
+    api.create_comment(commit_as_you_go, domain.Comment(user_id=u2.id, comment='comment', goal_id=g0.id))
+    commit_as_you_go.commit()
+
+    comment_count = api.read_comment_count(commit_as_you_go, g0.id)
+    assert comment_count == 2

@@ -168,3 +168,11 @@ def get_comments(user_id: UUID | None = None, goal_id: UUID | None = None) -> li
         comments = api.read_comments(conn, user_id=user_id, goal_id=goal_id)
     logging.debug(f"Comments: {comments}")
     return comments
+
+@router.get("/comments/count")
+def get_comment_count(goal_id: UUID) -> domain.CommentCount:
+    logging.debug(f"Getting comment count for goal: {goal_id}")
+    with engine.begin() as conn:
+        count = api.read_comment_count(conn, goal_id)
+    logging.debug(f"Comment count: {count}")
+    return count

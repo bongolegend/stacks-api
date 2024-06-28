@@ -230,3 +230,8 @@ def read_comments(conn: Connection, user_id: UUID = None, goal_id: UUID = None) 
 def delete_comment(conn: Connection, comment_id: UUID) -> None:
     stmt = delete(tables.comments).where(tables.comments.c.id == comment_id)
     conn.execute(stmt)
+
+def read_comment_count(conn: Connection, goal_id: UUID) -> domain.CommentCount:
+    stmt = select(func.count()).select_from(tables.comments).where(tables.comments.c.goal_id == goal_id)
+    result = conn.execute(stmt).scalar()
+    return domain.CommentCount(goal_id=goal_id, count=result)

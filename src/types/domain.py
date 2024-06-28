@@ -49,3 +49,8 @@ class CommentEnriched(Comment):
 class GoalEnriched(Goal):
     user: User
     parent: Goal | None = None
+
+
+class CommentCount(BaseModel):
+    goal_id: UUID
+    count: int = 0
