@@ -54,3 +54,13 @@ class GoalEnriched(Goal):
 class CommentCount(BaseModel):
     goal_id: UUID
     count: int = 0
+
+class CommentSub(CustomBase):
+    goal_id: UUID
+    user_id: UUID
+
+class UnreadComment(CustomBase):
+    user_id: UUID
+    goal_id: UUID
+    comment_id: UUID
+    read: bool = False

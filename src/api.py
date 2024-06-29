@@ -241,3 +241,59 @@ def read_comment_counts(conn: Connection, goal_ids: list[UUID]) -> list[domain.C
     result = conn.execute(stmt).all()
     counts = [domain.CommentCount(goal_id=row.goal_id, count=row.count) for row in result]
     return counts
+
+### COMMENT SUBS AND UNREAD COMMENTS
+
+def create_comment_sub(conn: Connection, comment_sub: domain.CommentSub) -> domain.CommentSub:
+    stmt = (
+        insert(tables.comment_subs)
+        .values(**comment_sub.model_dump(exclude=EXCLUDED_FIELDS, exclude_none=True))
+        .returning(tables.comment_subs))
+    inserted = conn.execute(stmt).fetchone()
+    return domain.CommentSub(**inserted._mapping)
+
+def create_unread_comments(conn: Connection, comment: domain.Comment) -> domain.UnreadComment:
+    """Create an unread comment for each comment sub."""
+    stmt = (
+        insert(tables.unread_comments)
+        .from_select(
+            [tables.unread_comments.c.user_id,
+             tables.unread_comments.c.goal_id,
+             tables.unread_comments.c.comment_id,
+             tables.unread_comments.c.read],
+            select(
+                tables.comment_subs.c.user_id,
+                literal(comment.goal_id),
+                literal(comment.id),
+                literal(False)
+            )
+            .select_from(tables.comment_subs)
+            .where(tables.comment_subs.c.goal_id == comment.goal_id)
+        )
+        .returning(tables.unread_comments))
+
+    inserted = conn.execute(stmt).fetchall()
+    unread_comments = [domain.UnreadComment(**row._mapping) for row in inserted]
+    return unread_comments
+
+
+def read_unread_comment_count(conn: Connection, user_id: UUID) -> int:
+    stmt = (
+        select(func.count())
+        .select_from(tables.unread_comments)
+        .where(tables.unread_comments.c.user_id == user_id)
+        .where(tables.unread_comments.c.read == False)
+    )
+    result = conn.execute(stmt).scalar()
+    return result
+
+
+def update_unread_comments(conn: Connection, comment_ids: list[UUID], user_id: UUID, read: bool = True) -> None:
+    stmt = (
+        update(tables.unread_comments)
+        .values(read=read)
+        .where(tables.unread_comments.c.comment_id.in_(comment_ids))
+        .where(tables.unread_comments.c.user_id == user_id))
+
+    conn.execute(stmt)
+
