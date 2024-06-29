@@ -121,9 +121,22 @@ def create_goal(conn: Connection, goal: domain.Goal) -> domain.Goal:
     inserted = conn.execute(stmt).fetchone()
     return domain.Goal(**inserted._mapping)
 
-def read_goals(conn: Connection, user_id: UUID, announcements_only: bool = False) -> list[domain.GoalEnriched]:
+def read_goals(
+        conn: Connection, 
+        user_id: UUID = None, 
+        goal_ids: list[UUID] = None, 
+        announcements_only: bool = False
+    ) -> list[domain.GoalEnriched]:
     primary = tables.goals.alias('primary')
     parent = tables.goals.alias('parent')
+
+    if [user_id, goal_ids].count(None) != 1:
+        raise ValueError("You must pass exactly one of user_id or goal_ids")
+    if user_id:
+        filter = primary.c.user_id == user_id
+    if goal_ids:
+        filter = primary.c.id.in_(goal_ids)
+
     query = (select(
                     *utils.prefix(primary, "primary_"),
                     *utils.prefix(parent, "parent_"),
@@ -131,7 +144,7 @@ def read_goals(conn: Connection, user_id: UUID, announcements_only: bool = False
                   .select_from(primary)
                   .join(tables.users)
                   .outerjoin(parent, primary.c.parent_id == parent.c.id)
-                  .where(primary.c.user_id == user_id))
+                  .where(filter))
     
     result = conn.execute(query).all()
 
@@ -299,3 +312,20 @@ def update_unread_comments(conn: Connection, user_id: UUID, comment_ids: list[UU
 
     conn.execute(stmt)
 
+
+def read_unread_comments(conn: Connection, user_id: UUID) -> list[domain.CommentEnriched]:
+    stmt = (
+        select(
+            tables.comments, 
+            *utils.prefix(tables.users, "u_"))
+        .join(tables.comments, tables.unread_comments.c.comment_id == tables.comments.c.id)
+        .join(tables.users, tables.comments.c.user_id == tables.users.c.id)
+        .where(tables.unread_comments.c.user_id == user_id)
+        .where(tables.unread_comments.c.read == False))
+    result = conn.execute(stmt).all()
+    comments = [
+        domain.CommentEnriched(
+            user=utils.filter_by_prefix(row, "u_"),
+            **row._mapping)
+        for row in result]
+    return comments

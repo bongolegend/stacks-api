@@ -111,11 +111,11 @@ def post_goal(goal: requests.NewGoal) -> domain.Goal:
     return s_goal
 
 
-@router.get("/goals/{user_id}")
-def get_goals(user_id: UUID) -> list[domain.GoalEnriched]:
-    log.debug("Getting goals for user", user_id=user_id)
+@router.get("/goals")
+def get_goals(user_id: UUID = None, goal_ids: Annotated[list[UUID], Query()] = None) -> list[domain.GoalEnriched]:
+    log.debug("Getting goals", user_id=user_id, goal_ids=goal_ids)
     with engine.begin() as conn:
-        goals = api.read_goals(conn, user_id)
+        goals = api.read_goals(conn, user_id=user_id, goal_ids=goal_ids)
     # log.debug("Goals", goals=goals)
     return goals
 
@@ -206,3 +206,12 @@ def patch_unread_comments(body: requests.UpdateUnreadComments) -> None:
     log.debug("Updating unread comments", user_id=user_id, comment_ids=comment_ids)
     with engine.begin() as conn:
         api.update_unread_comments(conn, user_id, comment_ids)
+
+
+@router.get("/comments/unread")
+def get_unread_comments(user_id: UUID) -> list[domain.CommentEnriched]:
+    log.debug("Getting unread comments for user", user_id=user_id)
+    with engine.begin() as conn:
+        comments = api.read_unread_comments(conn, user_id)
+    log.debug("Unread comments", comments=comments)
+    return comments

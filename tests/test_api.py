@@ -193,3 +193,21 @@ def update_unread_comment(commit_as_you_go):
 
     unreads = api.read_unread_comments(commit_as_you_go, u0.id)
     assert all([u.read == True for u in unreads])
+
+
+def test_read_unread_comments(commit_as_you_go):
+    u0 = utils.create_users_for_tests(commit_as_you_go, count=1)[0]
+    g0 = utils.create_goals_for_tests(commit_as_you_go, [u0], count=1)[0]
+
+    api.create_comment_sub(commit_as_you_go, domain.CommentSub(goal_id=g0.id, user_id=u0.id))
+    c0 = api.create_comment(commit_as_you_go, domain.Comment(user_id=u0.id, comment='comment', goal_id=g0.id))
+    commit_as_you_go.commit()
+
+    api.create_unread_comments(commit_as_you_go, c0)
+    commit_as_you_go.commit()
+
+    unreads = api.read_unread_comments(commit_as_you_go, u0.id)
+    assert len(unreads) == 1
+    assert unreads[0].id == c0.id
+    assert unreads[0].goal_id == g0.id
+    assert unreads[0].user_id == u0.id
