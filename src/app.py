@@ -1,4 +1,5 @@
 import logging
+import structlog
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -7,8 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.routes import common, v0
 
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
+log = structlog.get_logger()
+log.info("this is a test", key="value!")
 
 app = FastAPI()
 
@@ -27,10 +28,11 @@ app.add_middleware(
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    logger.error(f"Validation error: {exc.errors()} - Request: {request.method} {request.url}")
+    log.error("Validation error", error=exc.errors(), request_method=request.method, request_url=request.url)
     
     body = await request.json()
-    logger.error(f"Request body: {body}")
+
+    log.error("Request body", content=body)
 
     return JSONResponse(
         status_code=422,

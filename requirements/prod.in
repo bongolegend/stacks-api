@@ -8,4 +8,5 @@ pydantic
 python-ulid
 pyyaml
 sqlalchemy
+structlog
 uvicorn[standard]
