@@ -265,6 +265,8 @@ def create_comment_sub(conn: Connection, comment_sub: domain.CommentSub) -> doma
         .on_conflict_do_nothing(constraint='uq_user_goal')
         .returning(tables.comment_subs))
     inserted = conn.execute(stmt).fetchone()
+    if inserted is None:
+        return
     return domain.CommentSub(**inserted._mapping)
 
 def create_unread_comments(conn: Connection, comment: domain.Comment) -> list[domain.UnreadComment]:
