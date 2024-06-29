@@ -290,7 +290,7 @@ def read_unread_comment_count(conn: Connection, user_id: UUID) -> int:
     return result
 
 
-def update_unread_comments(conn: Connection, comment_ids: list[UUID], user_id: UUID, read: bool = True) -> None:
+def update_unread_comments(conn: Connection, user_id: UUID, comment_ids: list[UUID], read: bool = True) -> None:
     stmt = (
         update(tables.unread_comments)
         .values(read=read)

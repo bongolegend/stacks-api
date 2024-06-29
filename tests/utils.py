@@ -1,3 +1,4 @@
+from uuid import UUID
 from datetime import datetime
 from pytz import utc
 
@@ -95,4 +96,25 @@ def create_follows_for_tests(conn: Connection, users: list[domain.User]) -> list
     inserted = conn.execute(insert(tables.follows).values(follows).returning(tables.follows)).all()
     conn.commit()
     inserted = [domain.Follow(**row._mapping) for row in inserted]
+    return inserted
+
+
+def create_comment_subs_for_tests(conn: Connection, goal_ids: list[UUID], user_ids: list[UUID]) -> list[domain.CommentSub]:
+    comment_subs = []
+    for g in goal_ids:
+        for u in user_ids:
+            comment_subs.append(domain.CommentSub(goal_id=g, user_id=u).model_dump(exclude_none=True))
+    inserted = conn.execute(insert(tables.comment_subs).values(comment_subs).returning(tables.comment_subs)).all()
+    conn.commit()
+    inserted = [domain.CommentSub(**row._mapping) for row in inserted]
+    return inserted
+
+def create_unread_comments_for_tests(conn: Connection, comments: list[domain.Comment], user_ids: list[UUID]) -> list[domain.UnreadComment]:
+    unread_comments = []
+    for c in comments:
+        for u in user_ids:
+            unread_comments.append(domain.UnreadComment(comment_id=c.id, goal_id=c.goal_id, user_id=u).model_dump(exclude_none=True))
+    inserted = conn.execute(insert(tables.unread_comments).values(unread_comments).returning(tables.unread_comments)).all()
+    conn.commit()
+    inserted = [domain.UnreadComment(**row._mapping) for row in inserted]
     return inserted

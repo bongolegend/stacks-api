@@ -13,10 +13,15 @@ def populate_db():
         users = utils.create_users_for_tests(conn, 4)
         users.append(u0)
         goals = utils.create_goals_for_tests(conn, users, 1)
-        milestones = utils.create_milestones_for_tests(conn, goals, 2)
+        milestones = utils.create_milestones_for_tests(conn, goals, 1)
+        comment_subs = utils.create_comment_subs_for_tests(conn, [g.id for g in goals], [u.id for u in users])
+
+        comments = []
         for u in users:
-            reactions = utils.create_reactions_for_tests(conn, u, goals + milestones, 2)
-            comments = utils.create_comments_for_tests(conn, u, goals + milestones, 2)
+            reactions = utils.create_reactions_for_tests(conn, u, goals + milestones, 1)
+            comments += utils.create_comments_for_tests(conn, u, goals, 1)
+        
+        unread_comments = utils.create_unread_comments_for_tests(conn, comments, [u.id for u in users])
         utils.create_follows_for_tests(conn, users)
         conn.commit()
     return users

@@ -188,7 +188,7 @@ def update_unread_comment(commit_as_you_go):
 
     api.create_unread_comments(commit_as_you_go, c0)
 
-    api.update_unread_comments(commit_as_you_go, [c0], u0.id)
+    api.update_unread_comments(commit_as_you_go, u0.id, [c0])
     commit_as_you_go.commit()
 
     unreads = api.read_unread_comments(commit_as_you_go, u0.id)

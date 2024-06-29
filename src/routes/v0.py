@@ -116,7 +116,7 @@ def get_goals(user_id: UUID) -> list[domain.GoalEnriched]:
     log.debug("Getting goals for user", user_id=user_id)
     with engine.begin() as conn:
         goals = api.read_goals(conn, user_id)
-    log.debug("Goals", goals=goals)
+    # log.debug("Goals", goals=goals)
     return goals
 
 
@@ -125,7 +125,7 @@ def get_announcements(user_id: UUID) -> list[domain.GoalEnriched]:
     log.debug("Getting announcements for user", user_id=user_id)
     with engine.begin() as conn:
         announcements = api.read_announcements(conn, user_id)
-    log.debug("Announcements", announcements=announcements)
+    # log.debug("Announcements", announcements=announcements)
     return announcements
 
 
@@ -157,7 +157,7 @@ def get_reactions(goal_ids: Annotated[list[UUID], Query()] = None) -> dict[UUID,
     log.debug("Getting reactions for goals", goal_ids=goal_ids)
     with engine.begin() as conn:
         reactions = api.read_reactions(conn, goal_ids=goal_ids)
-    log.debug("Reactions", reactions=reactions)
+    # log.debug("Reactions", reactions=reactions)
     return reactions
 
 ### COMMENTS
@@ -178,7 +178,7 @@ def get_comments(user_id: UUID | None = None, goal_id: UUID | None = None) -> li
     log.debug("Getting comments", user_id=user_id, goal_id=goal_id)
     with engine.begin() as conn:
         comments = api.read_comments(conn, user_id=user_id, goal_id=goal_id)
-    log.debug("Comments", comments=comments)
+    # log.debug("Comments", comments=comments)
     return comments
 
 
@@ -200,7 +200,9 @@ def get_unread_comments(user_id: UUID) -> int:
 
 
 @router.patch("/comments/unread")
-def patch_unread_comments(user_id: UUID, comment_ids: list[UUID]) -> None:
+def patch_unread_comments(body: requests.UpdateUnreadComments) -> None:
+    user_id = body.user_id
+    comment_ids = body.comment_ids
     log.debug("Updating unread comments", user_id=user_id, comment_ids=comment_ids)
     with engine.begin() as conn:
         api.update_unread_comments(conn, user_id, comment_ids)

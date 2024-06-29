@@ -62,3 +62,15 @@ class NewComment(BaseModel):
     @classmethod
     def validate_id(cls, value):
         return validate_uuid(value)
+
+
+class UpdateUnreadComments(BaseModel):
+    user_id: UUID
+    comment_ids: list[UUID]
+
+    @field_validator('user_id', 'comment_ids', mode="before")
+    @classmethod
+    def validate_id(cls, value):
+        if isinstance(value, list):
+            return [validate_uuid(v) for v in value]
+        return validate_uuid(value)
