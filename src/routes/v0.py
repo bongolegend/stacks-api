@@ -107,6 +107,7 @@ def post_goal(goal: requests.NewGoal) -> domain.Goal:
     log.debug("Creating goal", goal=goal)
     with engine.begin() as conn:
         s_goal = api.create_goal(conn, domain.Goal(**goal.model_dump()))
+        api.create_comment_sub(conn, domain.CommentSub(goal_id=s_goal.id, user_id=s_goal.user_id))
     return s_goal
 
 
@@ -166,6 +167,9 @@ def post_comment(comment: requests.NewComment) -> domain.Comment:
     log.debug("Creating comment", comment=comment)
     with engine.begin() as conn:
         s_comment = api.create_comment(conn, domain.Comment(**comment.model_dump()))
+        api.create_unread_comments(conn, s_comment)
+        # sub after creating the unreads because you don't want to notify the user of their own comment
+        api.create_comment_sub(conn, domain.CommentSub(goal_id=s_comment.goal_id, user_id=s_comment.user_id))
     return s_comment
 
 
@@ -184,3 +188,19 @@ def get_comment_counts(goal_ids: Annotated[list[UUID], Query()] = None) -> list[
     with engine.begin() as conn:
         counts = api.read_comment_counts(conn, goal_ids)
     return counts
+
+
+@router.get("/comments/unread/count/{user_id}")
+def get_unread_comments(user_id: UUID) -> int:
+    log.debug("Getting unread comment count for user", user_id=user_id)
+    with engine.begin() as conn:
+        count = api.read_unread_comment_count(conn, user_id)
+    log.debug("Unread comment count", count=count)
+    return count
+
+
+@router.patch("/comments/unread")
+def patch_unread_comments(user_id: UUID, comment_ids: list[UUID]) -> None:
+    log.debug("Updating unread comments", user_id=user_id, comment_ids=comment_ids)
+    with engine.begin() as conn:
+        api.update_unread_comments(conn, user_id, comment_ids)

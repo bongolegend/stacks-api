@@ -1,6 +1,7 @@
 from collections import defaultdict
 from uuid import UUID
 
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy import select, insert, delete, and_, or_, desc, update, case, union, Table, Row, func, literal
 from sqlalchemy.engine import Connection
 
@@ -246,13 +247,14 @@ def read_comment_counts(conn: Connection, goal_ids: list[UUID]) -> list[domain.C
 
 def create_comment_sub(conn: Connection, comment_sub: domain.CommentSub) -> domain.CommentSub:
     stmt = (
-        insert(tables.comment_subs)
+        pg_insert(tables.comment_subs)
         .values(**comment_sub.model_dump(exclude=EXCLUDED_FIELDS, exclude_none=True))
+        .on_conflict_do_nothing(constraint='uq_user_goal')
         .returning(tables.comment_subs))
     inserted = conn.execute(stmt).fetchone()
     return domain.CommentSub(**inserted._mapping)
 
-def create_unread_comments(conn: Connection, comment: domain.Comment) -> domain.UnreadComment:
+def create_unread_comments(conn: Connection, comment: domain.Comment) -> list[domain.UnreadComment]:
     """Create an unread comment for each comment sub."""
     stmt = (
         insert(tables.unread_comments)
