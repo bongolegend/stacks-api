@@ -79,3 +79,15 @@ unread_comments = Table(
     Column('updated_at', DateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
     UniqueConstraint('user_id', 'comment_id', name='uq_user_comment')
 )
+
+devices = Table(
+    'devices', metadata,
+    Column('id', UUID(as_uuid=True), primary_key=True, server_default=text("uuid_generate_v4()")),
+    Column('user_id', UUID(as_uuid=True), ForeignKey('users.id', ondelete="CASCADE"), nullable=False),
+    Column('os', String, nullable=False),
+    Column('version', String, nullable=False),
+    Column('expo_push_token', String, nullable=False),
+    Column('active', Boolean, default=True),
+    Column('created_at', DateTime(timezone=True), server_default=func.now()),
+    Column('updated_at', DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+)

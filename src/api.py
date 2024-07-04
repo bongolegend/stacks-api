@@ -334,3 +334,20 @@ def read_unread_comments(conn: Connection, user_id: UUID) -> list[domain.Comment
             **row._mapping)
         for row in result]
     return comments
+
+### DEVICES
+
+def create_device(conn: Connection, device: domain.Device) -> domain.Device:
+    stmt = (
+        insert(tables.devices)
+        .values(**device.model_dump(exclude=EXCLUDED_FIELDS, exclude_none=True))
+        .returning(tables.devices))
+    inserted = conn.execute(stmt).fetchone()
+    return domain.Device(**inserted._mapping)
+
+
+def read_devices(conn: Connection, user_ids: list[UUID]) -> list[domain.Device]:
+    stmt = select(tables.devices).where(tables.devices.c.user_id.in_(user_ids))
+    result = conn.execute(stmt).all()
+    devices = [domain.Device(**row._mapping) for row in result]
+    return devices

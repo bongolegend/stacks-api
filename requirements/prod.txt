@@ -19,6 +19,9 @@ certifi==2024.2.2
     # via
     #   httpcore
     #   httpx
+    #   requests
+charset-normalizer==3.3.2
+    # via requests
 click==8.1.7
     # via
     #   typer
@@ -29,6 +32,8 @@ email-validator==2.1.1
     # via
     #   -r requirements/prod.in
     #   fastapi
+exponent-server-sdk==2.1.0
+    # via -r requirements/prod.in
 fastapi==0.111.0
     # via -r requirements/prod.in
 fastapi-cli==0.0.4
@@ -52,6 +57,7 @@ idna==3.7
     #   anyio
     #   email-validator
     #   httpx
+    #   requests
 jinja2==3.1.4
     # via fastapi
 mako==1.3.5
@@ -92,6 +98,8 @@ pyyaml==6.0.1
     # via
     #   -r requirements/prod.in
     #   uvicorn
+requests==2.32.3
+    # via exponent-server-sdk
 rich==13.7.1
     # via typer
 scramp==1.4.5
@@ -99,7 +107,9 @@ scramp==1.4.5
 shellingham==1.5.4
     # via typer
 six==1.16.0
-    # via python-dateutil
+    # via
+    #   exponent-server-sdk
+    #   python-dateutil
 sniffio==1.3.1
     # via
     #   anyio
@@ -124,6 +134,8 @@ typing-extensions==4.11.0
     #   typer
 ujson==5.10.0
     # via fastapi
+urllib3==2.2.2
+    # via requests
 uvicorn[standard]==0.30.0
     # via
     #   -r requirements/prod.in

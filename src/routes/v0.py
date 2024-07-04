@@ -215,3 +215,13 @@ def get_unread_comments(user_id: UUID) -> list[domain.CommentEnriched]:
         comments = api.read_unread_comments(conn, user_id)
     log.debug("Unread comments", comments=comments)
     return comments
+
+
+### DEVICES
+
+@router.post("/devices")
+def post_device(device: requests.NewDevice) -> domain.Device:
+    log.debug("Creating device", device=device)
+    with engine.begin() as conn:
+        s_device = api.create_device(conn, domain.Device(**device.model_dump()))
+    return s_device

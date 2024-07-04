@@ -64,3 +64,6 @@ class UnreadComment(CustomBase):
     goal_id: UUID
     comment_id: UUID
     read: bool = False
+
+class Device(CustomBase, requests.NewDevice):
+    pass

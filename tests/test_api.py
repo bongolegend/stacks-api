@@ -211,3 +211,11 @@ def test_read_unread_comments(commit_as_you_go):
     assert unreads[0].id == c0.id
     assert unreads[0].goal_id == g0.id
     assert unreads[0].user_id == u0.id
+
+def test_create_read_devices(commit_as_you_go):
+    u0 = utils.create_users_for_tests(commit_as_you_go, count=1)[0]
+    device = domain.Device(user_id=u0.id, os='os', version='version', expo_push_token='token')
+    db_device = api.create_device(commit_as_you_go, device)
+    commit_as_you_go.commit()
+
+    assert api.read_devices(commit_as_you_go, [u0.id])[0].id == db_device.id

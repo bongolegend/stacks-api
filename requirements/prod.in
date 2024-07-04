@@ -1,5 +1,6 @@
 alembic
 email-validator
+exponent_server_sdk
 fastapi
 gunicorn
 pg8000

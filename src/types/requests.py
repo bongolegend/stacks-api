@@ -74,3 +74,16 @@ class UpdateUnreadComments(BaseModel):
         if isinstance(value, list):
             return [validate_uuid(v) for v in value]
         return validate_uuid(value)
+    
+class NewDevice(BaseModel):
+    user_id: UUID
+    os: str
+    version: str
+    expo_push_token: str
+    active: bool = True
+
+
+    @field_validator('user_id', mode="before")
+    @classmethod
+    def validate_id(cls, value):
+        return validate_uuid(value)
