@@ -112,10 +112,10 @@ def post_goal(goal: requests.NewGoal) -> domain.Goal:
 
 
 @router.get("/goals")
-def get_goals(user_id: UUID = None, goal_ids: Annotated[list[UUID], Query()] = None) -> list[domain.GoalEnriched]:
-    log.debug("Getting goals", user_id=user_id, goal_ids=goal_ids)
+def get_goals(user_id: UUID = None, goal_ids: Annotated[list[UUID], Query()] = None, parent_id: UUID = None) -> list[domain.GoalEnriched]:
+    log.debug("Getting goals", user_id=user_id, goal_ids=goal_ids, parent_id=parent_id)
     with engine.begin() as conn:
-        goals = api.read_goals(conn, user_id=user_id, goal_ids=goal_ids)
+        goals = api.read_goals(conn, user_id=user_id, goal_ids=goal_ids, parent_id=parent_id)
     # log.debug("Goals", goals=goals)
     return goals
 

@@ -124,18 +124,21 @@ def create_goal(conn: Connection, goal: domain.Goal) -> domain.Goal:
 def read_goals(
         conn: Connection, 
         user_id: UUID = None, 
-        goal_ids: list[UUID] = None, 
+        goal_ids: list[UUID] = None,
+        parent_id: UUID = None, 
         announcements_only: bool = False
     ) -> list[domain.GoalEnriched]:
     primary = tables.goals.alias('primary')
     parent = tables.goals.alias('parent')
 
-    if [user_id, goal_ids].count(None) != 1:
-        raise ValueError("You must pass exactly one of user_id or goal_ids")
+    if [user_id, goal_ids, parent_id].count(None) != 2:
+        raise ValueError("You must pass exactly one of user_id, goal_ids, or parent_id")
     if user_id:
         filter = primary.c.user_id == user_id
     if goal_ids:
         filter = primary.c.id.in_(goal_ids)
+    if parent_id:
+        filter = primary.c.parent_id == parent_id
 
     query = (select(
                     *utils.prefix(primary, "primary_"),
