@@ -162,3 +162,4 @@ cython_debug/
 # Project Specific
 config.yaml
 setup-dev.sh
+secrets/

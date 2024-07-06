@@ -34,7 +34,7 @@ Add new deps to `requirements/*.in`, then run `./update-deps.sh` to recompile th
 ```ENV=prod-debug alembic upgrade head```
 
 ### Run Locally 
-``gunicorn```
+``gunicorn```  or for hot reloading ```./uvicorn.sh``` 
 
 Check `localhost:8000/docs` to confirm the API is running
 

@@ -21,21 +21,26 @@ def create_user(conn: Connection, user: domain.User) -> domain.User:
 def read_user(
         conn: Connection,
         id: UUID = None,
-        username: str = None, 
-        email: str = None) -> domain.User | None:
-    if [id, username, email].count(None) != 2:
-        raise ValueError("You must pass exactly one of id, username or email")
+        firebase_id: str|None = None,
+        email: str | None = None
+        ) -> domain.User | None:
+    if [id, firebase_id, email].count(None) != 2:
+        raise ValueError("You must pass exactly one of id, firebase_id or email")
     if id:
         filter = tables.users.c.id == id
-    if username:
-        filter = tables.users.c.username == username
+    if firebase_id:
+        filter = tables.users.c.firebase_id == firebase_id
     if email:
         filter = tables.users.c.email == email
     stmt = select(tables.users).where(filter)
     result = conn.execute(stmt).fetchone()
     if result is None:
         return
-    return domain.User(**result._mapping)
+    # Filter the result to include only the fields defined in domain.User
+    result_without_secrets = {
+        key: value for key, value in result._mapping.items() if key in domain.User.model_fields
+        }
+    return domain.User(**result_without_secrets)
 
 def search_users(conn: Connection, user_id: UUID) -> list[domain.UserEnriched]:
     stmt = (

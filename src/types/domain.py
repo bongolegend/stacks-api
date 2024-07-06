@@ -26,6 +26,9 @@ class UserEnriched(User):
     leader: bool | None = None
     follower: bool | None = None
 
+class UserAuth(User):
+    access_token: str
+
 class Goal(CustomBase, requests.NewGoal):
     pass
 

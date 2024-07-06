@@ -9,6 +9,7 @@ users = Table(
     Column('id', UUID(as_uuid=True), primary_key=True, server_default=text("uuid_generate_v4()")),
     Column('username', String, unique=True, nullable=False),
     Column('email', String, unique=True, nullable=False),
+    Column('firebase_id', String, unique=True),
     Column('created_at', DateTime(timezone=True), server_default=func.now()),
     Column('updated_at', DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 )

@@ -1,6 +1,7 @@
 alembic
 email-validator
 fastapi
+firebase_admin
 gunicorn
 pg8000
 psycopg2

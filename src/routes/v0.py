@@ -1,14 +1,16 @@
 from typing import Annotated
 import structlog
 from uuid import UUID
+import os
 
 from fastapi.responses import JSONResponse
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Header
 from pydantic import EmailStr
 
 from src.types import requests, domain
 from src import api
 from src.sqlalchemy.connection import engine
+from src.auth import verify_token, create_access_token
 
 log = structlog.get_logger()
 
@@ -17,7 +19,27 @@ router = APIRouter(
     tags=["v0"]
 )
 
+ENV = os.getenv("ENV")
+
 ### USER
+
+@router.get("/users/login")
+def get_user_login(email: EmailStr, authorization: str = Header(...)) -> domain.UserAuth:
+    log.debug("Logging in user", email=email)
+    if ENV == "prod":
+        decoded_token = verify_token(authorization)
+        firebase_id = decoded_token['uid']
+        with engine.begin() as conn:
+            user = api.read_user(conn, firebase_id=firebase_id)
+    else:
+        log.info("logging in without firebase authentication", email=email)
+        with engine.begin() as conn:
+            user = api.read_user(conn, email=email)
+    if user is None:
+        return JSONResponse({"error": "User not found"}, status_code=404)
+    jwt_token = create_access_token({"sub": user.id})
+    return domain.UserAuth(**user.model_dump(), access_token=jwt_token)
+
 
 @router.post("/users")
 def post_user(user: requests.NewUser) -> domain.User:
@@ -33,7 +55,7 @@ def get_user(user_id: UUID) -> domain.User:
         user = api.read_user(conn, id=user_id)
     return user
 
-
+# TODO: Figure out if endpoint below is being used
 @router.get("/users")
 def get_user(email: EmailStr | None = None, username: str | None = None) -> list[domain.User]:
     with engine.begin() as conn:
