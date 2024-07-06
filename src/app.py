@@ -19,7 +19,8 @@ app.include_router(v0.router)
 # TODO hide this behind dev
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8081", "http://www.getstacks.io"],  # Allow specific origins
+    # allow_origins=["http://localhost:8081", "http://www.getstacks.io"],  # Allow specific origins
+    allow_origins=["*"],  # Allow all origins
     allow_credentials=True,
     allow_methods=["*"],  # Allow all HTTP methods
     allow_headers=["*"],  # Allow all headers
