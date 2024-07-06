@@ -67,3 +67,11 @@ class UnreadComment(CustomBase):
 
 class Device(CustomBase, requests.NewDevice):
     pass
+
+
+class PushNotification(BaseModel):
+    expo_push_token: str
+    recipient_id: UUID
+    commenter_id: UUID
+    comment: str
+    message: str

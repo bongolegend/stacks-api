@@ -167,7 +167,9 @@ def post_comment(comment: requests.NewComment) -> domain.Comment:
     log.debug("Creating comment", comment=comment)
     with engine.begin() as conn:
         s_comment = api.create_comment(conn, domain.Comment(**comment.model_dump()))
-        api.create_unread_comments(conn, s_comment)
+        unread_comments = api.create_unread_comments(conn, s_comment)
+        notifs = api.push_notify_unread_comments(conn, unread_comments)
+        log.debug("Push Notifications", count=len(notifs), notifs=notifs)
         # sub after creating the unreads because you don't want to notify the user of their own comment
         api.create_comment_sub(conn, domain.CommentSub(goal_id=s_comment.goal_id, user_id=s_comment.user_id))
     return s_comment
@@ -191,7 +193,7 @@ def get_comment_counts(goal_ids: Annotated[list[UUID], Query()] = None) -> list[
 
 
 @router.get("/comments/unread/count/{user_id}")
-def get_unread_comments(user_id: UUID) -> int:
+def get_unread_comment_count(user_id: UUID) -> int:
     log.debug("Getting unread comment count for user", user_id=user_id)
     with engine.begin() as conn:
         count = api.read_unread_comment_count(conn, user_id)

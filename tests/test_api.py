@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from src import api
 from src.types import domain, requests
 from tests import utils
@@ -174,7 +176,7 @@ def test_create_unread_comment(commit_as_you_go):
 
     unreads = api.create_unread_comments(commit_as_you_go, c0)
 
-    assert len(unreads) == 2
+    assert len(unreads) == 1
     assert all([u.read == False for u in unreads])
 
 
@@ -196,21 +198,22 @@ def update_unread_comment(commit_as_you_go):
 
 
 def test_read_unread_comments(commit_as_you_go):
-    u0 = utils.create_users_for_tests(commit_as_you_go, count=1)[0]
+    u0, u1 = utils.create_users_for_tests(commit_as_you_go, count=2)
     g0 = utils.create_goals_for_tests(commit_as_you_go, [u0], count=1)[0]
 
     api.create_comment_sub(commit_as_you_go, domain.CommentSub(goal_id=g0.id, user_id=u0.id))
-    c0 = api.create_comment(commit_as_you_go, domain.Comment(user_id=u0.id, comment='comment', goal_id=g0.id))
+    c0 = api.create_comment(commit_as_you_go, domain.Comment(user_id=u1.id, comment='comment', goal_id=g0.id))
     commit_as_you_go.commit()
 
-    api.create_unread_comments(commit_as_you_go, c0)
+    s_unreads = api.create_unread_comments(commit_as_you_go, c0)
+
     commit_as_you_go.commit()
 
     unreads = api.read_unread_comments(commit_as_you_go, u0.id)
     assert len(unreads) == 1
     assert unreads[0].id == c0.id
     assert unreads[0].goal_id == g0.id
-    assert unreads[0].user_id == u0.id
+    assert unreads[0].user_id == u1.id
 
 def test_create_read_devices(commit_as_you_go):
     u0 = utils.create_users_for_tests(commit_as_you_go, count=1)[0]
@@ -219,3 +222,19 @@ def test_create_read_devices(commit_as_you_go):
     commit_as_you_go.commit()
 
     assert api.read_devices(commit_as_you_go, [u0.id])[0].id == db_device.id
+
+def test_push_notify_unread_comments(commit_as_you_go):
+    u0, u1 = utils.create_users_for_tests(commit_as_you_go, count=2)
+    d0 = api.create_device(commit_as_you_go, domain.Device(user_id=u0.id, os='os', version='version', expo_push_token='token'))
+    g0 = utils.create_goals_for_tests(commit_as_you_go, [u0], count=1)[0]
+    api.create_comment_sub(commit_as_you_go, domain.CommentSub(goal_id=g0.id, user_id=u0.id))
+    c0 = api.create_comment(commit_as_you_go, domain.Comment(user_id=u1.id, comment='comment', goal_id=g0.id))
+    unread_comments = api.create_unread_comments(commit_as_you_go, c0)
+
+    commit_as_you_go.commit()
+
+    with patch('src.api.send_message') as mock_send_message:
+        api.push_notify_unread_comments(commit_as_you_go, unread_comments)
+        assert mock_send_message.call_count == 1
+        assert mock_send_message.call_args[0][0] == d0.expo_push_token
+        assert c0.comment in mock_send_message.call_args[0][1]

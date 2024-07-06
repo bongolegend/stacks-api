@@ -32,7 +32,7 @@ session.headers.update(
 
 # Basic arguments. You should extend this function with the push features you
 # want to use, or simply pass in a `PushMessage` object.
-def send_push_message(device_token, message, extra=None):
+def send_message(device_token, message, extra=None):
     try:
         response = PushClient(session=session).publish(
             PushMessage(to=device_token,
@@ -62,6 +62,3 @@ def send_push_message(device_token, message, extra=None):
         # Encountered some other per-notification error.
         log.error("PushTicketError", exc=exc, token=device_token, message=message, extra=extra, push_response=exc.push_response._asdict())
         raise exc
-    
-TOKEN = "ExponentPushToken[77KOQsOsQxm9UAp2Qbjsps]"
-send_push_message(TOKEN, "Hello, world!")

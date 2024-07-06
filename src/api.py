@@ -7,6 +7,8 @@ from sqlalchemy.engine import Connection
 
 from src.sqlalchemy import tables, utils
 from src.types import domain, requests
+from src.push_notifications import send_message
+
 
 # exclude these fields from create functions
 EXCLUDED_FIELDS = {"created_at", "updated_at"}
@@ -273,7 +275,7 @@ def create_comment_sub(conn: Connection, comment_sub: domain.CommentSub) -> doma
     return domain.CommentSub(**inserted._mapping)
 
 def create_unread_comments(conn: Connection, comment: domain.Comment) -> list[domain.UnreadComment]:
-    """Create an unread comment for each comment sub."""
+    """Create an unread comment for each comment sub, excluding the comment author."""
     stmt = (
         insert(tables.unread_comments)
         .from_select(
@@ -289,6 +291,7 @@ def create_unread_comments(conn: Connection, comment: domain.Comment) -> list[do
             )
             .select_from(tables.comment_subs)
             .where(tables.comment_subs.c.goal_id == comment.goal_id)
+            .where(tables.comment_subs.c.user_id != comment.user_id)
         )
         .returning(tables.unread_comments))
 
@@ -334,6 +337,36 @@ def read_unread_comments(conn: Connection, user_id: UUID) -> list[domain.Comment
             **row._mapping)
         for row in result]
     return comments
+
+
+def push_notify_unread_comments(conn: Connection, unread_comments: list[domain.UnreadComment]) -> list[domain.PushNotification]:
+    stmt = (
+        select(
+            tables.devices.c.expo_push_token, 
+            tables.devices.c.user_id.label("recipient_id"),
+            tables.users.c.id.label("commenter_id"), 
+            tables.users.c.username.label("commenter"), 
+            tables.comments.c.comment)
+        .select_from(tables.unread_comments)
+        .join(tables.devices, tables.unread_comments.c.user_id == tables.devices.c.user_id)
+        .join(tables.comments, tables.unread_comments.c.comment_id == tables.comments.c.id)
+        .join(tables.users, tables.comments.c.user_id == tables.users.c.id)
+        .where(tables.unread_comments.c.id.in_([uc.id for uc in unread_comments]))
+    )
+    result = conn.execute(stmt).all()
+
+    notifs = []
+    for row in result:
+        message = f"{row.commenter} commented on your goal: {row.comment[:50]}"
+        notif = domain.PushNotification(**row._mapping, message=message)
+        send_message(
+            notif.expo_push_token,
+            notif.message,
+        )
+        notifs.append(notif)
+
+    return notifs
+
 
 ### DEVICES
 
