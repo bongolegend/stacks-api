@@ -6,6 +6,8 @@ gunicorn
 pg8000
 psycopg2
 pydantic
+pyjwt
+python-jose
 python-ulid
 pyyaml
 sqlalchemy

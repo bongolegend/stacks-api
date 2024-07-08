@@ -13,10 +13,11 @@ EXCLUDED_FIELDS = {"created_at", "updated_at"}
 
 ### USERS
 
-def create_user(conn: Connection, user: domain.User) -> domain.User:
+def create_user(conn: Connection, user: domain.UserFirebase) -> domain.User:
     stmt = insert(tables.users).values(**user.model_dump(exclude=EXCLUDED_FIELDS, exclude_none=True)).returning(tables.users)
     inserted = conn.execute(stmt).fetchone()._mapping
-    return domain.User(**inserted)
+    user_result = {key: value for key, value in inserted.items() if key in domain.User.model_fields}
+    return domain.User(**user_result)
 
 def read_user(
         conn: Connection,

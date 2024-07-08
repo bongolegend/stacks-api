@@ -2,6 +2,7 @@ from typing import Annotated
 import structlog
 from uuid import UUID
 import os
+import time 
 
 from fastapi.responses import JSONResponse
 from fastapi import APIRouter, Query, Header
@@ -10,7 +11,7 @@ from pydantic import EmailStr
 from src.types import requests, domain
 from src import api
 from src.sqlalchemy.connection import engine
-from src.auth import verify_token, create_access_token
+from src.auth import verify_token, create_access_token, verify_firebase_token
 
 log = structlog.get_logger()
 
@@ -26,27 +27,36 @@ ENV = os.getenv("ENV")
 @router.get("/users/login")
 def get_user_login(email: EmailStr, authorization: str = Header(...)) -> domain.UserAuth:
     log.debug("Logging in user", email=email)
-    if ENV == "prod":
-        decoded_token = verify_token(authorization)
-        firebase_id = decoded_token['uid']
-        with engine.begin() as conn:
-            user = api.read_user(conn, firebase_id=firebase_id)
-    else:
+    if ENV == "test":
         log.info("logging in without firebase authentication", email=email)
         with engine.begin() as conn:
             user = api.read_user(conn, email=email)
+    else:
+        # hack fix added delay - TODO find better solution
+        time.sleep(1.0)
+        decoded_token = verify_firebase_token(authorization)
+        firebase_id = decoded_token['uid']
+        with engine.begin() as conn:
+            user = api.read_user(conn, firebase_id=firebase_id)
     if user is None:
         return JSONResponse({"error": "User not found"}, status_code=404)
-    jwt_token = create_access_token({"sub": user.id})
+    jwt_token = create_access_token({"sub": str(user.id)})
     return domain.UserAuth(**user.model_dump(), access_token=jwt_token)
 
 
 @router.post("/users")
-def post_user(user: requests.NewUser) -> domain.User:
+def post_user(user: requests.NewUser, authorization: str= Header(...)) -> domain.UserAuth:
     log.debug("Creating user", user=user)
+    if ENV == "test":
+        log.info("create user without firebase authentication", email=user.email)
+        firebase_id = None
+    else:
+        decoded_token = verify_firebase_token(authorization)
+        firebase_id = decoded_token['uid']
     with engine.begin() as conn:
-        s_user = api.create_user(conn, domain.User(**user.model_dump()))
-    return s_user
+        new_user = api.create_user(conn, domain.UserFirebase(**user.model_dump(),firebase_id = firebase_id))
+    jwt_token = create_access_token({"sub": str(new_user.id)})
+    return domain.UserAuth(**new_user.model_dump(), access_token=jwt_token)
 
 
 @router.get("/users/{user_id}")

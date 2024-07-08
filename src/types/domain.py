@@ -26,6 +26,9 @@ class UserEnriched(User):
     leader: bool | None = None
     follower: bool | None = None
 
+class UserFirebase(User):
+    firebase_id: str
+
 class UserAuth(User):
     access_token: str
 

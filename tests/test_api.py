@@ -4,7 +4,7 @@ from tests import utils
 
 
 def test_create_read_delete_user(commit_as_you_go):
-    db_user = api.create_user(commit_as_you_go, domain.User(username='user1', email='u1@a.b'))
+    db_user = api.create_user(commit_as_you_go, domain.UserFirebase(username='user1', email='u1@a.b', firebase_id='u1_fake_fbid'))
     commit_as_you_go.commit()
     assert api.read_user(commit_as_you_go, id=db_user.id) == db_user
     api.delete_user(commit_as_you_go, db_user.id)
