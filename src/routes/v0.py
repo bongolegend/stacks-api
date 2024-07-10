@@ -25,38 +25,33 @@ ENV = os.getenv("ENV")
 ### USER
 
 @router.get("/users/login")
-def get_user_login(email: EmailStr, authorization: str = Header(...)) -> domain.UserAuth:
+def get_user_login(email: EmailStr, authorization: str = Header(...)) -> domain.User:
     log.debug("Logging in user", email=email)
     if ENV == "test":
         log.info("logging in without firebase authentication", email=email)
         with engine.begin() as conn:
             user = api.read_user(conn, email=email)
     else:
-        # hack fix added delay - TODO find better solution
-        time.sleep(1.0)
-        decoded_token = verify_firebase_token(authorization)
-        firebase_id = decoded_token['uid']
+        firebase_id = verify_firebase_token(authorization)
         with engine.begin() as conn:
             user = api.read_user(conn, firebase_id=firebase_id)
     if user is None:
         return JSONResponse({"error": "User not found"}, status_code=404)
-    jwt_token = create_access_token({"sub": str(user.id)})
-    return domain.UserAuth(**user.model_dump(), access_token=jwt_token)
+    return domain.User(**user.model_dump())
 
 
 @router.post("/users")
-def post_user(user: requests.NewUser, authorization: str= Header(...)) -> domain.UserAuth:
+def post_user(user: requests.NewUser, authorization: str= Header(...)) -> domain.User:
     log.debug("Creating user", user=user)
+    # TODO: add test env to config. This exists so unit tests don't use firebase 
     if ENV == "test":
         log.info("create user without firebase authentication", email=user.email)
         firebase_id = None
     else:
-        decoded_token = verify_firebase_token(authorization)
-        firebase_id = decoded_token['uid']
+        firebase_id = verify_firebase_token(authorization)
     with engine.begin() as conn:
         new_user = api.create_user(conn, domain.UserFirebase(**user.model_dump(),firebase_id = firebase_id))
-    jwt_token = create_access_token({"sub": str(new_user.id)})
-    return domain.UserAuth(**new_user.model_dump(), access_token=jwt_token)
+    return domain.User(**new_user.model_dump())
 
 
 @router.get("/users/{user_id}")
@@ -65,7 +60,7 @@ def get_user(user_id: UUID) -> domain.User:
         user = api.read_user(conn, id=user_id)
     return user
 
-# TODO: Figure out if endpoint below is being used
+# TODO: Figure out if endpoint below is being used - I think not...
 @router.get("/users")
 def get_user(email: EmailStr | None = None, username: str | None = None) -> list[domain.User]:
     with engine.begin() as conn:
@@ -135,8 +130,9 @@ def get_follow_counts(user_id: UUID) -> domain.FollowCounts:
 ### GOAL
 
 @router.post("/goals")
-def post_goal(goal: requests.NewGoal) -> domain.Goal:
+def post_goal(goal: requests.NewGoal, authorization: str = Header(...)) -> domain.Goal:
     log.debug("Creating goal", goal=goal)
+    firebase_id = verify_firebase_token(authorization)
     with engine.begin() as conn:
         s_goal = api.create_goal(conn, domain.Goal(**goal.model_dump()))
         api.create_comment_sub(conn, domain.CommentSub(goal_id=s_goal.id, user_id=s_goal.user_id))
