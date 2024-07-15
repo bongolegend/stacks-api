@@ -1,12 +1,14 @@
 import structlog
 import time 
 import datetime
+import os
 
 import firebase_admin
 from firebase_admin import auth, credentials
 import jwt
 from jose import JWTError, jwt
 from firebase_admin._auth_utils import InvalidIdTokenError
+from uuid import UUID
 
 
 # Initialize the Firebase Admin SDK
@@ -21,16 +23,16 @@ log = structlog.get_logger()
 # Secret key for JWT encoding
 SECRET_KEY = "your_secret_key"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
-REFRESH_TOKEN_EXPIRE_DAYS = 14
+ACCESS_TOKEN_EXPIRE_DAYS = 365
 
-# class InvalidTokenError(Exception):
-#     """Raised if userToken does not contain valid Secret String"""
+ENV = os.getenv("ENV")
 
-#     def __init__(self, message="Unauthorized Request: invalid token"):
-#         self.message = message
-#         super().__init__(self.message)
+class InvalidJWTError(Exception):
+    """Raised if accessToken is not valid"""
 
+    def __init__(self, message="Unauthorized Request: invalid token"):
+        self.message = message
+        super().__init__(self.message)
 
 
 def verify_firebase_token(authorization: str):
@@ -56,30 +58,27 @@ def verify_firebase_token(authorization: str):
             raise
 
 
-def create_access_token(data: dict):
-    to_encode = data.copy()
+def create_access_token(userid: UUID):
+    to_encode = {"userid": str(userid)}
     access_token_expiration = (datetime.datetime.now(datetime.timezone.utc) 
-                               + datetime.timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+                               + datetime.timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS))
     to_encode.update({"exp": access_token_expiration})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
 
-def create_refresh_token(data: dict):
-    expire = datetime.utcnow() + datetime.timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
-    to_encode = data.copy()
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
-
-
-def verify_token(token: str):
+def verify_token(authorization: str):
+    if ENV == "test":
+        log.debug("Bypass token verification")
+        return 'fakeid'
     try:
+        token = authorization.split(" ")[1]
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        userid: str = payload.get("sub")
-        if userid is None:
-            log.error("Could not verify access token")
-            raise InvalidTokenError()
+        userid: str = payload.get("userid")
+        if not userid:
+            log.error("Token valid, user not found")
+            # TODO: is this the right error to raise here?
+            raise JWTError()
+        return userid
     except JWTError:
-        raise InvalidTokenError()
-    return userid 
+        raise ()

@@ -11,7 +11,9 @@ def validate_uuid(value) -> UUID:
 
 class NewUser(BaseModel):
     email: EmailStr
-    username: str = Field(..., min_length=3, max_length=15)
+    # TODO: need to inform user of min/max user name constraint
+    # or create allert in the event that credentials don't meet specifications
+    username: str = Field(..., min_length=3, max_length=25)
 
 class NewGoal(BaseModel):
     user_id: UUID

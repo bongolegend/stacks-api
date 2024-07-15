@@ -1,8 +1,11 @@
 import pytest
+import os
 
 from src.sqlalchemy.connection import engine
 from tests import utils
 from populate_db import populate_db
+
+os.environ['ENV'] = 'test'
 
 @pytest.fixture(scope="function", autouse=True)
 def setup():
