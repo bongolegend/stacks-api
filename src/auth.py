@@ -12,6 +12,7 @@ from uuid import UUID
 
 
 # Initialize the Firebase Admin SDK
+# TODO (Nico) put this in config
 cred = credentials.Certificate('/app/secrets/firebase_stacks_confidential_credentials.json')
 firebase_admin.initialize_app(cred)
 
