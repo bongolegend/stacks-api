@@ -34,7 +34,9 @@ Add new deps to `requirements/*.in`, then run `./update-deps.sh` to recompile th
 ```ENV=prod-debug alembic upgrade head```
 
 ### Run Locally 
-``gunicorn```  or for hot reloading ```./uvicorn.sh``` 
+```./uvicorn.sh``` for local development. offers hot reloading, but only one worker. 
+
+prod uses ```gunicorn```, which is configured with multiple workers. See `./gunicorn.conf.py` 
 
 Check `localhost:8000/docs` to confirm the API is running
 
